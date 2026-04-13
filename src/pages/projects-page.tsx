@@ -74,7 +74,7 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3 px-1 py-1">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-1 py-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-base font-medium text-foreground">Manage your projects here.</h1>

@@ -55,9 +55,10 @@ export function AppShell() {
 
           <div className="border-t border-border p-2">
             <Button
-              className="h-8 w-full gap-1.5 rounded-sm bg-brand text-sm text-brand-foreground hover:bg-brand-hover"
+              className="h-8 w-full gap-1.5 rounded-sm border-brand/35 text-sm text-brand hover:bg-brand/10 dark:border-brand/40 dark:hover:bg-brand/15"
               onClick={() => navigate("/projects", { state: { openCreateProject: true } })}
               type="button"
+              variant="outline"
             >
               <Plus className="size-3.5" />
               Add project
@@ -65,7 +66,7 @@ export function AppShell() {
           </div>
         </aside>
 
-        <main className="min-h-0 flex-1 overflow-auto bg-zinc-100 p-3 dark:bg-zinc-900/80">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-zinc-100 p-3 dark:bg-zinc-900/80">
           <Outlet />
         </main>
       </div>

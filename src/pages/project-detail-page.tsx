@@ -1,15 +1,11 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react"
 import { useParams } from "react-router-dom"
 
+import { ProjectEditDialog } from "@/components/project-detail/project-edit-dialog"
+import { ProjectTaskBoard } from "@/components/project-detail/project-task-board"
+import { ProjectTaskList } from "@/components/project-detail/project-task-list"
+import { TaskDialog } from "@/components/project-detail/task-dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { ApiError } from "@/lib/api/client"
 import {
   createTask,
@@ -18,65 +14,8 @@ import {
   updateProject,
   updateTask,
 } from "@/lib/api/taskflow"
-import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import type { AuthUser, Project, Task, TaskPriority, TaskStatus } from "@/types"
-import { cn } from "@/lib/utils"
-import {
-  AlignLeft,
-  CalendarDays,
-  Filter,
-  LayoutGrid,
-  List,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-} from "lucide-react"
-
-function formatShortDate(iso: string | null): string {
-  if (!iso) {
-    return "—"
-  }
-  const d = new Date(`${iso}T12:00:00`)
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-}
-
-function initialsForUser(users: AuthUser[], userId: string | null): string {
-  if (!userId) {
-    return "?"
-  }
-  const user = users.find((entry) => entry.id === userId)
-  if (!user) {
-    return "?"
-  }
-  const parts = user.name.trim().split(/\s+/)
-  if (parts.length >= 2) {
-    return (parts[0]![0]! + parts[1]![0]!).toUpperCase()
-  }
-  return user.name.slice(0, 2).toUpperCase()
-}
-
-function priorityChipClass(priority: TaskPriority): string {
-  switch (priority) {
-    case "high":
-      return "bg-red-500/12 text-red-800 dark:text-red-300"
-    case "medium":
-      return "bg-sky-500/12 text-sky-900 dark:text-sky-200"
-    case "low":
-      return "bg-slate-200/80 text-slate-700 dark:bg-muted dark:text-muted-foreground"
-  }
-}
-
-function priorityLabel(priority: TaskPriority): string {
-  switch (priority) {
-    case "high":
-      return "Urgent"
-    case "medium":
-      return "Normal"
-    case "low":
-      return "Low"
-  }
-}
+import { Filter, LayoutGrid, List, Pencil, Plus, Search } from "lucide-react"
 
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -263,6 +202,25 @@ export function ProjectDetailPage() {
     }
   }
 
+  function handleBoardCommit(nextTasks: Task[]) {
+    const prevSnapshot = tasks
+    setTasks(nextTasks)
+    for (const t of nextTasks) {
+      const p = prevSnapshot.find((x) => x.id === t.id)
+      if (p && p.status !== t.status) {
+        void (async () => {
+          try {
+            const updated = await updateTask(t.id, { status: t.status })
+            setTasks((cur) => cur.map((x) => (x.id === t.id ? updated : x)))
+          } catch (error) {
+            setTasks(prevSnapshot)
+            setErrorMessage(error instanceof ApiError ? error.message : "Unable to update task status.")
+          }
+        })()
+      }
+    }
+  }
+
   function tasksForColumn(column: TaskStatus): Task[] {
     return filteredTasks.filter((task) => task.status === column)
   }
@@ -276,7 +234,7 @@ export function ProjectDetailPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 px-1 py-1">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-x-hidden px-1 py-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -292,11 +250,11 @@ export function ProjectDetailPage() {
               <Pencil className="size-4" />
             </Button>
           </div>
-            <p className="mt-1 max-w-2xl text-body text-muted-foreground">
-              {project?.description != null && project.description.trim() !== ""
-                ? project.description.trim()
-                : "No description yet."}
-            </p>
+          <p className="mt-1 max-w-2xl text-body text-muted-foreground">
+            {project?.description != null && project.description.trim() !== ""
+              ? project.description.trim()
+              : "No description yet."}
+          </p>
         </div>
         <Button
           className="gap-2 self-start rounded-sm bg-brand text-brand-foreground hover:bg-brand-hover"
@@ -308,160 +266,42 @@ export function ProjectDetailPage() {
         </Button>
       </div>
 
-      <Dialog
-        onOpenChange={(open) => {
-          setProjectDialogOpen(open)
-        }}
+      <ProjectEditDialog
+        isSaving={isSavingProject}
+        onOpenChange={setProjectDialogOpen}
+        onProjectDescriptionChange={setProjectDescription}
+        onProjectNameChange={setProjectName}
+        onSubmit={handleSaveProject}
         open={projectDialogOpen}
-      >
-        <DialogContent className="sm:max-w-md [&_input]:rounded-sm [&_select]:rounded-sm [&_textarea]:rounded-sm">
-          <form className="grid gap-4" onSubmit={handleSaveProject}>
-            <DialogHeader>
-              <DialogTitle>Edit project</DialogTitle>
-              <DialogDescription>Update the project name and description.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-3">
-              <label className="text-body">
-                Name
-                <input
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => setProjectName(event.target.value)}
-                  value={projectName}
-                />
-              </label>
-              <label className="text-body">
-                Description
-                <textarea
-                  className="focus-ring-accent mt-1 min-h-[88px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => setProjectDescription(event.target.value)}
-                  rows={3}
-                  value={projectDescription}
-                />
-              </label>
-            </div>
-            <DialogFooter className="gap-2 sm:justify-end">
-              <Button onClick={() => setProjectDialogOpen(false)} type="button" variant="outline">
-                Cancel
-              </Button>
-              <Button
-                className="bg-brand text-brand-foreground hover:bg-brand-hover"
-                disabled={isSavingProject}
-                type="submit"
-              >
-                {isSavingProject ? "Saving…" : "Save"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        projectDescription={projectDescription}
+        projectName={projectName}
+      />
 
-      <Dialog
+      <TaskDialog
+        assigneeId={assigneeId}
+        description={description}
+        dueDate={dueDate}
+        editingTaskId={editingTaskId}
+        isSaving={isSaving}
+        onAssigneeIdChange={setAssigneeId}
+        onDescriptionChange={setDescription}
+        onDueDateChange={setDueDate}
         onOpenChange={(open) => {
           setTaskDialogOpen(open)
           if (!open) {
             resetTaskForm()
           }
         }}
+        onPriorityChange={setPriority}
+        onSubmit={handleSaveTask}
+        onTaskStatusChange={setTaskStatus}
+        onTitleChange={setTitle}
         open={taskDialogOpen}
-      >
-        <DialogContent className="sm:max-w-md [&_input]:rounded-sm [&_select]:rounded-sm [&_textarea]:rounded-sm">
-          <form className="grid gap-4" onSubmit={handleSaveTask}>
-            <DialogHeader>
-              <DialogTitle>{editingTaskId ? "Edit task" : "New task"}</DialogTitle>
-              <DialogDescription>
-                {editingTaskId ? "Update details for this task." : "Add a task to this project."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-3">
-              <label className="text-body">
-                Title
-                <input
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => setTitle(event.target.value)}
-                  value={title}
-                />
-              </label>
-              <label className="text-body">
-                Description
-                <textarea
-                  className="focus-ring-accent mt-1 min-h-[80px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => setDescription(event.target.value)}
-                  rows={3}
-                  value={description}
-                />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-body">
-                  Status
-                  <select
-                    className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                    onChange={(event) => setTaskStatus(event.target.value as TaskStatus)}
-                    value={taskStatus}
-                  >
-                    <option value="todo">Not started</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="done">Completed</option>
-                  </select>
-                </label>
-                <label className="text-body">
-                  Priority
-                  <select
-                    className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                    onChange={(event) => setPriority(event.target.value as TaskPriority)}
-                    value={priority}
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Normal</option>
-                    <option value="high">Urgent</option>
-                  </select>
-                </label>
-              </div>
-              <label className="text-body">
-                Assignee
-                <select
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => setAssigneeId(event.target.value)}
-                  value={assigneeId}
-                >
-                  <option value="">Unassigned</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-body">
-                Due date
-                <input
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => setDueDate(event.target.value)}
-                  type="date"
-                  value={dueDate}
-                />
-              </label>
-            </div>
-            <DialogFooter className="gap-2 sm:justify-end">
-              <Button
-                onClick={() => {
-                  setTaskDialogOpen(false)
-                }}
-                type="button"
-                variant="outline"
-              >
-                Cancel
-              </Button>
-              <Button
-                className="bg-brand text-brand-foreground hover:bg-brand-hover"
-                disabled={isSaving}
-                type="submit"
-              >
-                {isSaving ? "Saving…" : "Save task"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        priority={priority}
+        taskStatus={taskStatus}
+        title={title}
+        users={users}
+      />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="relative max-w-md flex-1">
@@ -485,6 +325,7 @@ export function ProjectDetailPage() {
               <option value="">All statuses</option>
               <option value="todo">Not started</option>
               <option value="in_progress">In progress</option>
+              <option value="in_review">In review</option>
               <option value="done">Completed</option>
             </select>
           </label>
@@ -542,163 +383,35 @@ export function ProjectDetailPage() {
       {isLoading && <p className="text-body text-muted-foreground">Loading project…</p>}
 
       {!isLoading && viewMode === "board" && (
-        <div className="grid min-h-[320px] flex-1 gap-4 md:grid-cols-3">
-          {TASK_STATUS_COLUMNS.map((column) => {
-            const columnTasks = tasksForColumn(column.id)
-            return (
-              <section
-                className={cn(
-                  "flex min-h-[280px] flex-col rounded-sm border border-border/40 p-3",
-                  column.surfaceClass
-                )}
-                key={column.id}
-              >
-                <div className="mb-3 flex items-center justify-between gap-2 px-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className={cn("size-2 shrink-0 rounded-full", column.dotClass)} />
-                    <h2 className="truncate text-sm font-semibold">{column.label}</h2>
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background/80 text-caption font-medium text-muted-foreground">
-                      {columnTasks.length}
-                    </span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <Button
-                      aria-label={`Add task to ${column.label}`}
-                      className="size-8 rounded-sm"
-                      onClick={() => {
-                        resetTaskForm()
-                        setTaskStatus(column.id)
-                        setTaskDialogOpen(true)
-                      }}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Plus className="size-4" />
-                    </Button>
-                    <button
-                      aria-label="Column menu"
-                      className="rounded-sm p-1 text-muted-foreground hover:bg-background/60"
-                      type="button"
-                    >
-                      <MoreHorizontal className="size-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex flex-1 flex-col gap-3">
-                  {columnTasks.length === 0 && (
-                    <p className="rounded-sm border border-dashed border-border/50 bg-background/30 px-3 py-8 text-center text-caption text-muted-foreground">
-                      No tasks
-                    </p>
-                  )}
-                  {columnTasks.map((task) => (
-                    <div
-                      className="rounded-sm border border-border/50 bg-card p-3.5 text-left transition-colors hover:border-border"
-                      key={task.id}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-caption font-medium",
-                            priorityChipClass(task.priority)
-                          )}
-                        >
-                          {priorityLabel(task.priority)}
-                        </span>
-                        <button
-                          aria-label="Task actions"
-                          className="rounded-md p-1 text-muted-foreground hover:bg-muted/80"
-                          onClick={() => openEditTaskDialog(task)}
-                          type="button"
-                        >
-                          <MoreHorizontal className="size-4" />
-                        </button>
-                      </div>
-                      <button
-                        className="mt-2 w-full text-left"
-                        onClick={() => openEditTaskDialog(task)}
-                        type="button"
-                      >
-                        <p className="text-body font-semibold leading-snug">{task.title}</p>
-                      </button>
-                      {task.description ? (
-                        <div className="mt-2 flex items-start gap-1.5 text-caption text-muted-foreground">
-                          <AlignLeft className="mt-0.5 size-3.5 shrink-0" />
-                          <p className="line-clamp-2">{task.description}</p>
-                        </div>
-                      ) : null}
-                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/40 pt-3 text-caption text-muted-foreground">
-                        <span
-                          className="flex size-8 items-center justify-center rounded-full bg-brand/15 text-caption font-semibold text-brand-on-subtle"
-                          title="Assignee"
-                        >
-                          {initialsForUser(users, task.assignee_id)}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarDays className="size-3.5" />
-                          {formatShortDate(task.due_date)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-          })}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <ProjectTaskBoard
+            filteredTasks={filteredTasks}
+            onAddTask={(columnId) => {
+              resetTaskForm()
+              setTaskStatus(columnId)
+              setTaskDialogOpen(true)
+            }}
+            onBoardCommit={handleBoardCommit}
+            onEditTask={openEditTaskDialog}
+            tasks={tasks}
+            users={users}
+          />
         </div>
       )}
 
       {!isLoading && viewMode === "list" && (
-        <div className="grid gap-2">
-          {filteredTasks.length === 0 ? (
-            <p className="rounded-sm border border-dashed bg-muted/20 px-4 py-10 text-center text-body text-muted-foreground">
-              No tasks match these filters.
-            </p>
-          ) : (
-            filteredTasks.map((task) => (
-              <div
-                className="flex flex-col gap-3 rounded-sm border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
-                key={task.id}
-              >
-                <div className="min-w-0">
-                  <p className="text-body font-medium">{task.title}</p>
-                  {task.description ? (
-                    <p className="mt-1 text-caption text-muted-foreground">{task.description}</p>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <span
-                    className={cn(
-                      "rounded-md px-2 py-0.5 text-caption font-medium",
-                      priorityChipClass(task.priority)
-                    )}
-                  >
-                    {priorityLabel(task.priority)}
-                  </span>
-                  <select
-                    className="rounded-sm border border-border bg-background px-2 py-1 text-body"
-                    onChange={(event) => void handleStatusChange(task.id, event.target.value as TaskStatus)}
-                    value={task.status}
-                  >
-                    <option value="todo">Not started</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="done">Completed</option>
-                  </select>
-                  <Button onClick={() => openEditTaskDialog(task)} type="button" variant="outline">
-                    Edit
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <ProjectTaskList
+          onEditTask={openEditTaskDialog}
+          onStatusChange={(taskId, status) => void handleStatusChange(taskId, status)}
+          tasks={filteredTasks}
+        />
       )}
 
       {!isLoading && (
-        <footer className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-page-panel-border-muted bg-toolbar-field/40 px-4 py-3 text-caption text-muted-foreground">
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-sm border border-page-panel-border-muted bg-toolbar-field/40 px-4 py-3 text-caption text-muted-foreground">
           <span>
-            Not started: {tasksForColumn("todo").length} · In progress: {tasksForColumn("in_progress").length} ·
-            Completed: {tasksForColumn("done").length}
+            Not started: {tasksForColumn("todo").length} · In progress: {tasksForColumn("in_progress").length} · In
+            review: {tasksForColumn("in_review").length} · Completed: {tasksForColumn("done").length}
           </span>
           <span>
             {stats.total} total · {stats.pct}% complete

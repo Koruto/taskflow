@@ -58,7 +58,7 @@ function authUser(db: MockDb, request: Request): MockUser | null {
   return db.users.find((u) => u.id === userId) ?? null
 }
 
-const allowedStatuses = new Set(["todo", "in_progress", "done"])
+const allowedStatuses = new Set(["todo", "in_progress", "in_review", "done"])
 
 export const handlers = [
   http.get(apiUrl("/health"), () => HttpResponse.json({ ok: true })),

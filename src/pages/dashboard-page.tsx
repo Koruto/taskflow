@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { ApiError } from "@/lib/api/client"
 import { getProject, listProjects } from "@/lib/api/taskflow"
+import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import { cn } from "@/lib/utils"
-import type { Project, Task, TaskStatus } from "@/types"
+import type { Project, Task, TaskPriority, TaskStatus } from "@/types"
 import { FileText, Filter, Folder, Search } from "lucide-react"
 
 type TaskRow = Task & { project_name: string }
+
+const TASKS_TABLE_GRID =
+  "grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)] gap-0"
 
 function todayIsoLocal(): string {
   const n = new Date()
@@ -39,6 +43,30 @@ function compareIso(a: string, b: string): number {
   return 0
 }
 
+/** Sunday of the calendar week containing `todayIso` (local). */
+function endOfCalendarWeekIso(todayIso: string): string {
+  const [ys, ms, ds] = todayIso.split("-").map(Number)
+  const dt = new Date(ys!, ms! - 1, ds!)
+  const dow = dt.getDay()
+  const daysToSunday = dow === 0 ? 0 : 7 - dow
+  return addDaysIso(todayIso, daysToSunday)
+}
+
+function taskStatusLabel(status: TaskStatus): string {
+  return TASK_STATUS_COLUMNS.find((c) => c.id === status)?.label ?? status
+}
+
+function priorityLabel(priority: TaskPriority): string {
+  switch (priority) {
+    case "high":
+      return "Urgent"
+    case "medium":
+      return "Normal"
+    case "low":
+      return "Low"
+  }
+}
+
 const PROJECT_CHIP_STYLES = [
   "bg-sky-500/15 text-sky-800 dark:text-sky-200",
   "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
@@ -61,29 +89,6 @@ function formatDue(iso: string | null): string {
   }
   const d = new Date(`${iso}T12:00:00`)
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-}
-
-function MetricSpark({ variant }: { variant: "up" | "down" | "flat" }) {
-  const pts =
-    variant === "up"
-      ? "0,24 8,18 16,20 24,8 32,12 40,4 48,0"
-      : variant === "down"
-        ? "0,4 8,12 16,10 24,20 32,16 40,24 48,22"
-        : "0,14 8,12 16,14 24,13 32,14 40,13 48,14"
-  const strokeClass =
-    variant === "up" ? "text-chart-positive" : variant === "down" ? "text-chart-negative" : "text-chart-neutral"
-  return (
-    <svg aria-hidden className={cn("h-8 w-20 shrink-0", strokeClass)} viewBox="0 0 48 24">
-      <polyline
-        fill="none"
-        points={pts}
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  )
 }
 
 export function DashboardPage() {
@@ -138,6 +143,7 @@ export function DashboardPage() {
 
   const today = todayIsoLocal()
   const weekEnd = addDaysIso(today, 7)
+  const calendarWeekEnd = useMemo(() => endOfCalendarWeekIso(today), [today])
 
   const summary = useMemo(() => {
     let dueToday = 0
@@ -166,59 +172,55 @@ export function DashboardPage() {
     const byStatus = (s: TaskStatus) => tasks.filter((t) => t.status === s).length
     return {
       totalTasks,
-      todo: byStatus("todo"),
-      inProgress: byStatus("in_progress"),
+      inReview: byStatus("in_review"),
       done: byStatus("done"),
     }
   }, [tasks])
 
-  const completionPct = counts.totalTasks === 0 ? 0 : Math.round((counts.done / counts.totalTasks) * 100)
-
   const firstName = user?.name?.trim().split(/\s+/)[0] ?? "there"
 
-  const todaysRows = useMemo(() => {
-    return tasks.filter((t) => t.due_date === today)
-  }, [tasks, today])
+  const weekRows = useMemo(() => {
+    return tasks.filter((t) => {
+      const due = t.due_date
+      if (!due) {
+        return false
+      }
+      return compareIso(due, today) >= 0 && compareIso(due, calendarWeekEnd) <= 0
+    })
+  }, [tasks, today, calendarWeekEnd])
 
   const filteredTable = useMemo(() => {
     const q = tableQuery.trim().toLowerCase()
-    const base = todaysRows
+    const base = weekRows
     if (!q) {
       return base
     }
-    return base.filter(
-      (t) => t.title.toLowerCase().includes(q) || t.project_name.toLowerCase().includes(q)
-    )
-  }, [todaysRows, tableQuery])
-
-  const weekBars = useMemo(() => {
-    const counts = [0, 0, 0, 0, 0, 0, 0]
-    for (const t of tasks) {
-      if (!t.due_date) {
-        continue
-      }
-      const d = new Date(`${t.due_date}T12:00:00`)
-      const js = d.getDay()
-      const idx = js === 0 ? 6 : js - 1
-      counts[idx] += 1
-    }
-    return counts
-  }, [tasks])
+    return base.filter((t) => {
+      const statusLabel = taskStatusLabel(t.status).toLowerCase()
+      const pri = priorityLabel(t.priority).toLowerCase()
+      return (
+        t.title.toLowerCase().includes(q) ||
+        t.project_name.toLowerCase().includes(q) ||
+        statusLabel.includes(q) ||
+        pri.includes(q)
+      )
+    })
+  }, [weekRows, tableQuery])
 
   return (
-    <div className="flex flex-col gap-3 px-1 py-1">
-      <div>
+    <div className="flex min-h-0 flex-1 flex-col gap-3 px-1 py-1">
+      <div className="shrink-0">
         <h1 className="text-base font-medium text-foreground">
           Welcome back, <span className="font-semibold">{firstName}</span>
         </h1>
       </div>
 
-      {errorMessage && <p className="text-caption text-destructive">{errorMessage}</p>}
-      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {errorMessage && <p className="shrink-0 text-caption text-destructive">{errorMessage}</p>}
+      {isLoading && <p className="shrink-0 text-sm text-muted-foreground">Loading…</p>}
 
       {!isLoading && (
         <>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-sm border border-page-panel-border bg-page-panel px-3 py-2 text-sm text-muted-foreground">
+          <div className="flex w-fit max-w-full shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1 rounded-sm border border-page-panel-border bg-page-panel px-3 py-2 text-sm text-muted-foreground">
             <span>
               <span className="font-semibold tabular-nums text-foreground">{summary.dueToday}</span> tasks due today
             </span>
@@ -233,59 +235,36 @@ export function DashboardPage() {
             </span>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="flex flex-col justify-between rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <div>
-                <p className="text-caption font-medium text-muted-foreground">Total projects</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">{projects.length}</p>
-                <p className="mt-0.5 text-caption text-emerald-600 dark:text-emerald-400">+5 vs last month</p>
-              </div>
-              <div className="mt-3 flex items-end justify-between gap-2">
-                <MetricSpark variant="up" />
-                <Button asChild className="h-7 rounded-sm px-2 text-xs" size="sm" variant="outline">
-                  <Link to="/projects">View</Link>
-                </Button>
-              </div>
+          <div className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
+              <p className="text-sm font-medium text-muted-foreground">Total projects</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{projects.length}</p>
             </div>
 
-            <div className="flex flex-col justify-between rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <div>
-                <p className="text-caption font-medium text-muted-foreground">Total tasks</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">{counts.totalTasks}</p>
-                <p className="mt-0.5 text-caption text-red-600 dark:text-red-400">-1 vs last month</p>
-              </div>
-              <div className="mt-3 flex items-end justify-between gap-2">
-                <MetricSpark variant="down" />
-                <Button asChild className="h-7 rounded-sm px-2 text-xs" size="sm" variant="outline">
-                  <Link to="/dashboard">View</Link>
-                </Button>
-              </div>
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
+              <p className="text-sm font-medium text-muted-foreground">Total tasks</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.totalTasks}</p>
             </div>
 
-            <div className="flex flex-col justify-between rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <div>
-                <p className="text-caption font-medium text-muted-foreground">In progress</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">{counts.inProgress}</p>
-                <p className="mt-0.5 text-caption text-emerald-600 dark:text-emerald-400">+12 vs last month</p>
-              </div>
-              <div className="mt-3 flex items-end justify-between gap-2">
-                <MetricSpark variant="up" />
-                <Button asChild className="h-7 rounded-sm px-2 text-xs" size="sm" variant="outline">
-                  <Link to="/projects">Open</Link>
-                </Button>
-              </div>
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
+              <p className="text-sm font-medium text-muted-foreground">In reviews</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.inReview}</p>
+            </div>
+
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
+              <p className="text-sm font-medium text-muted-foreground">Completed tasks</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.done}</p>
             </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-3">
-            <section className="rounded-sm border border-page-panel-border bg-page-panel p-4 lg:col-span-2">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-sm font-semibold">Today&apos;s tasks</h2>
+          <section className="flex min-h-0 flex-1 flex-col gap-3 rounded-sm border border-page-panel-border bg-page-panel p-4">
+              <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-sm font-semibold">This week&apos;s tasks</h2>
                 <div className="flex flex-1 flex-wrap items-center gap-2 sm:max-w-md sm:justify-end">
                   <div className="relative min-w-40 flex-1">
                     <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                     <input
-                      className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-sm"
+                      className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-[0.9375rem]"
                       onChange={(event) => setTableQuery(event.target.value)}
                       placeholder="Search"
                       type="search"
@@ -304,45 +283,68 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <div className="mt-3 overflow-x-auto rounded-sm border border-page-panel-border-muted">
-                <table className="w-full min-w-[480px] text-left text-sm">
-                  <thead className="border-b border-page-panel-border-muted bg-toolbar-field/50 text-caption text-muted-foreground">
+              <div className="min-h-0 flex-1 overflow-auto rounded-sm border-t border-page-panel-border-muted bg-muted/15">
+                <table className="w-full min-w-[52rem] table-fixed text-left text-[0.9375rem] leading-snug">
+                  <thead className="sticky top-0 z-10 bg-toolbar-field/80 text-sm text-muted-foreground backdrop-blur-sm">
                     <tr>
-                      <th className="px-3 py-2 font-medium">Task name</th>
-                      <th className="px-3 py-2 font-medium">Project</th>
-                      <th className="px-3 py-2 font-medium">Due</th>
+                      <th className="p-0 font-medium" colSpan={5} scope="colgroup">
+                        <div className={cn(TASKS_TABLE_GRID, "border-b border-page-panel-border-muted px-3 py-2.5")}>
+                          <div>Task name</div>
+                          <div>Project</div>
+                          <div>Task status</div>
+                          <div>Priority</div>
+                          <div>Due Date</div>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="text-[0.9375rem] text-foreground">
                     {filteredTable.length === 0 ? (
                       <tr>
-                        <td className="px-3 py-8 text-center text-muted-foreground" colSpan={3}>
-                          No tasks due today{tableQuery.trim() ? " match your search." : "."}
+                        <td className="px-3 py-8 text-center text-muted-foreground" colSpan={5}>
+                          No tasks due this week{tableQuery.trim() ? " match your search." : "."}
                         </td>
                       </tr>
                     ) : (
                       filteredTable.map((task) => (
-                        <tr className="border-b border-page-panel-border-subtle last:border-0" key={task.id}>
-                          <td className="px-3 py-2">
-                            <span className="inline-flex items-center gap-2 font-medium text-foreground">
-                              <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                              <Link className="hover:underline" to={`/projects/${task.project_id}`}>
-                                {task.title}
-                              </Link>
-                            </span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span
+                        <tr
+                          className="group relative border-b border-border/60 transition-colors hover:bg-muted/55"
+                          key={task.id}
+                        >
+                          <td className="relative p-0" colSpan={5}>
+                            <Link
+                              aria-label={`Open project ${task.project_name}`}
+                              className="absolute inset-0 z-0 block"
+                              to={`/projects/${task.project_id}`}
+                            />
+                            <div
                               className={cn(
-                                "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-caption font-medium",
-                                projectChipClass(task.project_id)
+                                TASKS_TABLE_GRID,
+                                "relative z-10 px-3 py-2.5 pointer-events-none"
                               )}
                             >
-                              <Folder className="size-3 shrink-0" />
-                              {task.project_name}
-                            </span>
+                              <div className="flex min-w-0 items-center gap-2">
+                                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                                <span className="min-w-0 font-medium text-brand underline-offset-2 group-hover:underline">
+                                  {task.title}
+                                </span>
+                              </div>
+                              <div className="text-muted-foreground">
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-sm font-medium text-foreground",
+                                    projectChipClass(task.project_id)
+                                  )}
+                                >
+                                  <Folder className="size-3.5 shrink-0" />
+                                  {task.project_name}
+                                </span>
+                              </div>
+                              <div className="text-muted-foreground">{taskStatusLabel(task.status)}</div>
+                              <div className="text-muted-foreground">{priorityLabel(task.priority)}</div>
+                              <div className="text-muted-foreground">{formatDue(task.due_date)}</div>
+                            </div>
                           </td>
-                          <td className="px-3 py-2 text-muted-foreground">{formatDue(task.due_date)}</td>
                         </tr>
                       ))
                     )}
@@ -350,38 +352,6 @@ export function DashboardPage() {
                 </table>
               </div>
             </section>
-
-            <section className="flex flex-col rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <h2 className="text-sm font-semibold">Performance</h2>
-              <p className="mt-0.5 text-caption text-muted-foreground">Completion across all projects</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight">{completionPct}%</p>
-              <p className="mt-0.5 text-caption text-emerald-600 dark:text-emerald-400">+15 vs last month</p>
-              <div className="mt-4 flex flex-1 flex-col justify-end">
-                <p className="mb-1.5 text-caption text-muted-foreground">This week</p>
-                <div className="flex h-28 items-end justify-between gap-1">
-                  {weekBars.map((h, i) => {
-                    const max = Math.max(...weekBars, 1)
-                    const pct = max === 0 ? 0 : (h / max) * 100
-                    return (
-                      <div className="flex flex-1 flex-col items-center gap-1" key={i}>
-                        <div
-                          className={cn(
-                            "w-full max-w-8 rounded-t-sm bg-linear-to-t from-brand-chart-deep/90 to-brand-chart-mid/80",
-                            i === 2 && "ring-1 ring-brand-emphasis/55"
-                          )}
-                          style={{ height: `${24 + pct * 0.72}%`, minHeight: "20px" }}
-                          title={`${h} tasks`}
-                        />
-                        <span className="text-caption text-muted-foreground">
-                          {["M", "T", "W", "T", "F", "S", "S"][i]}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </section>
-          </div>
         </>
       )}
     </div>
