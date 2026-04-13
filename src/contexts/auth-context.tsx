@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { login as loginRequest, register as registerRequest } from "@/lib/api/auth"
 import { configureApiClient } from "@/lib/api/client"
 import { clearStoredSession, readStoredSession, writeStoredSession } from "@/lib/auth/storage"
-import type { AuthSession } from "@/lib/auth/types"
+import type { AuthSession } from "@/types"
 import type { LoginFormValues, RegisterFormValues } from "@/lib/schemas/auth"
 
 type AuthContextValue = {

@@ -1,3 +1,5 @@
+// @ts-nocheck
+import crypto from "node:crypto";
 import cors from "cors";
 import express from "express";
 
@@ -20,7 +22,8 @@ const projects = [
   {
     id: "p-demo",
     name: "Website Redesign",
-    description: "Q2 project",
+    description:
+      "Q2 redesign of the company website with modern UI/UX improvements.",
     owner_id: demoUser.id,
     created_at: new Date().toISOString(),
   },
@@ -28,13 +31,13 @@ const projects = [
 const tasks = [
   {
     id: "t-demo-1",
-    title: "Design homepage",
-    description: "Create first draft",
-    status: "todo",
+    title: "Design homepage mockups",
+    description: "Wireframes and high-fidelity mockups for the landing page.",
+    status: "done",
     priority: "high",
     project_id: "p-demo",
     assignee_id: demoUser.id,
-    due_date: "2026-04-20",
+    due_date: "2026-04-15",
     creator_id: demoUser.id,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -42,12 +45,12 @@ const tasks = [
   {
     id: "t-demo-2",
     title: "Review mobile layout",
-    description: "",
-    status: "in_progress",
+    description: "Check breakpoints and spacing on small screens.",
+    status: "done",
     priority: "medium",
     project_id: "p-demo",
     assignee_id: demoUser.id,
-    due_date: "2026-04-22",
+    due_date: "2026-04-18",
     creator_id: demoUser.id,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -55,7 +58,7 @@ const tasks = [
   {
     id: "t-demo-3",
     title: "Ship v1 UI",
-    description: "",
+    description: "Final polish and release checklist.",
     status: "done",
     priority: "low",
     project_id: "p-demo",
@@ -70,7 +73,7 @@ const tasks = [
 const sessions = new Map();
 
 function makeToken(userId) {
-  return `mock-token-${userId}-${Math.random().toString(36).slice(2, 10)}`;
+  return `mock-token-${userId}-${crypto.randomBytes(6).toString("hex")}`;
 }
 
 function toSafeUser(user) {
@@ -112,8 +115,17 @@ app.post("/auth/register", (req, res) => {
   if (Object.keys(fields).length > 0) {
     return res.status(400).json({ error: "validation failed", fields });
   }
-  if (users.some((entry) => entry.email.toLowerCase() === String(email).toLowerCase())) {
-    return res.status(400).json({ error: "validation failed", fields: { email: "already exists" } });
+  if (
+    users.some(
+      (entry) => entry.email.toLowerCase() === String(email).toLowerCase(),
+    )
+  ) {
+    return res
+      .status(400)
+      .json({
+        error: "validation failed",
+        fields: { email: "already exists" },
+      });
   }
 
   const user = {
@@ -139,7 +151,8 @@ app.post("/auth/login", (req, res) => {
 
   const user = users.find(
     (entry) =>
-      entry.email.toLowerCase() === String(email).toLowerCase() && entry.password === String(password)
+      entry.email.toLowerCase() === String(email).toLowerCase() &&
+      entry.password === String(password),
   );
   if (!user) {
     return res.status(401).json({ error: "unauthorized" });
@@ -150,12 +163,19 @@ app.post("/auth/login", (req, res) => {
   return res.json({ token, user: toSafeUser(user) });
 });
 
+app.get("/users", authRequired, (_req, res) => {
+  return res.json({ users: users.map(toSafeUser) });
+});
+
 app.get("/projects", authRequired, (req, res) => {
   const visibleProjects = projects.filter((project) => {
     if (project.owner_id === req.user.id) {
       return true;
     }
-    return tasks.some((task) => task.project_id === project.id && task.assignee_id === req.user.id);
+    return tasks.some(
+      (task) =>
+        task.project_id === project.id && task.assignee_id === req.user.id,
+    );
   });
   return res.json({ projects: visibleProjects });
 });
@@ -183,7 +203,10 @@ app.get("/projects/:id", authRequired, (req, res) => {
   if (!project) {
     return res.status(404).json({ error: "not found" });
   }
-  return res.json({ ...project, tasks: tasks.filter((task) => task.project_id === project.id) });
+  return res.json({
+    ...project,
+    tasks: tasks.filter((task) => task.project_id === project.id),
+  });
 });
 
 app.patch("/projects/:id", authRequired, (req, res) => {
@@ -231,7 +254,8 @@ app.get("/projects/:id/tasks", authRequired, (req, res) => {
     filtered = filtered.filter((task) => task.status === req.query.status);
   }
   if (req.query.assignee) {
-    filtered = filtered.filter((task) => task.assignee_id === req.query.assignee);
+    const assignee = String(req.query.assignee);
+    filtered = filtered.filter((task) => task.assignee_id === assignee);
   }
   return res.json({ tasks: filtered });
 });
@@ -241,19 +265,31 @@ app.post("/projects/:id/tasks", authRequired, (req, res) => {
   if (!project) {
     return res.status(404).json({ error: "not found" });
   }
-  const { title, description = "", priority = "medium", assignee_id = null, due_date = null } = req.body ?? {};
+  const {
+    title,
+    description = "",
+    priority = "medium",
+    assignee_id = null,
+    due_date = null,
+    status: requestedStatus,
+  } = req.body ?? {};
   const fields = validateRequired({ title });
   if (Object.keys(fields).length > 0) {
     return res.status(400).json({ error: "validation failed", fields });
   }
+  const allowedStatuses = new Set(["todo", "in_progress", "done"]);
+  const status =
+    typeof requestedStatus === "string" && allowedStatuses.has(requestedStatus)
+      ? requestedStatus
+      : "todo";
   const task = {
     id: crypto.randomUUID(),
     title: String(title),
     description: String(description),
-    status: "todo",
+    status,
     priority: String(priority),
     project_id: project.id,
-    assignee_id,
+    assignee_id: assignee_id === "" ? null : assignee_id,
     due_date,
     creator_id: req.user.id,
     created_at: new Date().toISOString(),
@@ -268,10 +304,30 @@ app.patch("/tasks/:id", authRequired, (req, res) => {
   if (!task) {
     return res.status(404).json({ error: "not found" });
   }
-  const updatableKeys = ["title", "description", "status", "priority", "assignee_id", "due_date"];
+  const updatableKeys = [
+    "title",
+    "description",
+    "status",
+    "priority",
+    "assignee_id",
+    "due_date",
+  ];
   for (const key of updatableKeys) {
     if (Object.prototype.hasOwnProperty.call(req.body ?? {}, key)) {
-      task[key] = req.body[key];
+      let value = req.body[key];
+      if (key === "assignee_id" && value === "") {
+        value = null;
+      }
+      if (key === "status" && typeof value === "string") {
+        const allowed = new Set(["todo", "in_progress", "done"]);
+        if (!allowed.has(value)) {
+          return res.status(400).json({
+            error: "validation failed",
+            fields: { status: "invalid status" },
+          });
+        }
+      }
+      task[key] = value;
     }
   }
   task.updated_at = new Date().toISOString();
@@ -288,7 +344,8 @@ app.delete("/tasks/:id", authRequired, (req, res) => {
   if (!project) {
     return res.status(404).json({ error: "not found" });
   }
-  const canDelete = task.creator_id === req.user.id || project.owner_id === req.user.id;
+  const canDelete =
+    task.creator_id === req.user.id || project.owner_id === req.user.id;
   if (!canDelete) {
     return res.status(403).json({ error: "forbidden" });
   }

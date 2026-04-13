@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api/client"
-import type { AuthResponse } from "@/lib/auth/types"
+import type { AuthResponse } from "@/types"
 import type { LoginFormValues, RegisterFormValues } from "@/lib/schemas/auth"
 
 export function login(values: LoginFormValues): Promise<AuthResponse> {

@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
@@ -13,7 +13,7 @@ import { type LoginFormValues, loginFormSchema } from "@/lib/schemas/auth"
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
+  const { login, isAuthenticated } = useAuth()
   const [isDemoSubmitting, setIsDemoSubmitting] = useState(false)
   const {
     register,
@@ -27,7 +27,7 @@ export function LoginPage() {
   const onSubmit = async (values: LoginFormValues) => {
     try {
       await login(values)
-      navigate((location.state as { from?: string } | null)?.from ?? "/projects", { replace: true })
+      navigate((location.state as { from?: string } | null)?.from ?? "/dashboard", { replace: true })
     } catch (error) {
       if (error instanceof ApiError && error.status === 400) {
         const fields = (error.payload as { fields?: Record<string, string> } | null)?.fields
@@ -43,11 +43,15 @@ export function LoginPage() {
     }
   }
 
+  if (isAuthenticated) {
+    return <Navigate replace to="/dashboard" />
+  }
+
   const onDemoLogin = async () => {
     setIsDemoSubmitting(true)
     try {
       await login(demoUserCredentials)
-      navigate((location.state as { from?: string } | null)?.from ?? "/projects", { replace: true })
+      navigate((location.state as { from?: string } | null)?.from ?? "/dashboard", { replace: true })
     } catch {
       setError("root", { message: "Demo login failed. Is the mock API running on port 4000?" })
     } finally {

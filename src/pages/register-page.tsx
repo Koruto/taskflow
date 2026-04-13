@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
@@ -9,7 +9,7 @@ import { type RegisterFormValues, registerFormSchema } from "@/lib/schemas/auth"
 
 export function RegisterPage() {
   const navigate = useNavigate()
-  const { register: registerUser } = useAuth()
+  const { register: registerUser, isAuthenticated } = useAuth()
   const {
     register,
     handleSubmit,
@@ -19,10 +19,14 @@ export function RegisterPage() {
     resolver: zodResolver(registerFormSchema),
   })
 
+  if (isAuthenticated) {
+    return <Navigate replace to="/dashboard" />
+  }
+
   const onSubmit = async (values: RegisterFormValues) => {
     try {
       await registerUser(values)
-      navigate("/projects", { replace: true })
+      navigate("/dashboard", { replace: true })
     } catch (error) {
       if (error instanceof ApiError && error.status === 400) {
         const fields = (error.payload as { fields?: Record<string, string> } | null)?.fields
