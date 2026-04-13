@@ -1,10 +1,9 @@
-function App() {
+import { RouterProvider } from "react-router-dom"
 
-  return (
-    <>
-      Taskflow
-    </>
-  )
+import { router } from "@/routes"
+
+function App() {
+  return <RouterProvider router={router} />
 }
 
 export default App
