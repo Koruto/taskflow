@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 
+import { TaskflowLogo } from "@/components/brand/taskflow-logo"
 import { AppHeader } from "@/components/layout/app-header"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -11,14 +12,9 @@ export function AppShell() {
   return (
     <div className="flex min-h-svh w-full flex-col bg-zinc-100 dark:bg-zinc-950">
       <div className="flex shrink-0 border-b border-border bg-white dark:bg-zinc-950">
-        <div className="flex h-14 w-64 shrink-0 items-center gap-2 border-r border-border px-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-brand-logo text-xs font-bold text-brand-on-mark">
-            T
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-tight text-foreground">Taskflow</p>
-            <p className="text-caption leading-tight text-muted-foreground">Workspace</p>
-          </div>
+        <div className="flex h-14 w-64 shrink-0 items-center gap-3 border-r border-border px-4">
+          <TaskflowLogo className="h-7 w-7 shrink-0 text-brand-logo" />
+          <span className="min-w-0 truncate text-sm font-bold text-foreground">Taskflow</span>
         </div>
         <AppHeader />
       </div>

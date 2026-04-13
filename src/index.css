@@ -296,6 +296,51 @@
   .focus-ring-accent {
     @apply outline-none ring-accent/25 focus-visible:ring-2;
   }
+
+  /**
+   * Shared marketing/auth backdrop (landing, login, register).
+   * Layers: base surface + radial brand glow + soft bottom vignette.
+   */
+  .tf-marketing-canvas {
+    @apply relative min-h-svh overflow-hidden bg-background text-foreground dark:bg-zinc-950;
+  }
+
+  .tf-marketing-canvas::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 90% 70% at 50% -10%,
+      color-mix(in oklch, var(--color-brand) 14%, transparent),
+      transparent
+    );
+  }
+
+  .dark .tf-marketing-canvas::before {
+    background: radial-gradient(
+      ellipse 90% 60% at 50% -5%,
+      color-mix(in oklch, var(--color-brand) 18%, transparent),
+      transparent
+    );
+  }
+
+  .tf-marketing-canvas::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      transparent,
+      rgba(228, 228, 231, 0.35)
+    );
+  }
+
+  .dark .tf-marketing-canvas::after {
+    background: linear-gradient(to bottom, transparent, transparent, rgb(0 0 0 / 0.3));
+  }
 }
 
 @layer base {
