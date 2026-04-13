@@ -4,6 +4,7 @@ import { parseISO } from "date-fns/parseISO"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { DialogInput, DialogLabel, DialogSpanLabel, DialogTextarea } from "@/components/ui/dialog-field"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import { priorityLabel, priorityPillClassName } from "@/lib/project-task-utils"
-import { dialogFormControlClass, dialogFormLabelClass } from "@/lib/dialog-form-classes"
 import { cn } from "@/lib/utils"
 import type { AuthUser, TaskPriority, TaskStatus } from "@/types"
 import { CalendarDays } from "lucide-react"
@@ -39,9 +39,12 @@ type TaskDialogProps = {
   users: AuthUser[]
   isSaving: boolean
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  error?: string | null
 }
 
 const PRIORITIES: TaskPriority[] = ["low", "medium", "high"]
+
+const RequiredMark = () => <span aria-hidden className="ml-0.5 text-destructive">*</span>
 
 export function TaskDialog({
   open,
@@ -62,6 +65,7 @@ export function TaskDialog({
   users,
   isSaving,
   onSubmit,
+  error,
 }: TaskDialogProps) {
   const [duePopoverOpen, setDuePopoverOpen] = useState(false)
 
@@ -79,33 +83,33 @@ export function TaskDialog({
 
           <div className="grid gap-3 px-4 py-3">
             <div className="grid gap-1">
-              <label className={dialogFormLabelClass} htmlFor="task-title">
-                Title
-              </label>
-              <input
-                className={cn(dialogFormControlClass, "h-9 w-full")}
+              <DialogLabel htmlFor="task-title">
+                Title<RequiredMark />
+              </DialogLabel>
+              <DialogInput
                 id="task-title"
                 onChange={(event) => onTitleChange(event.target.value)}
                 value={title}
               />
+              {error && (
+                <p className="text-[0.8rem] text-destructive">{error}</p>
+              )}
             </div>
 
             <div className="grid gap-1">
-              <label className={dialogFormLabelClass} htmlFor="task-desc">
-                Description
-              </label>
-              <textarea
-                className={cn(dialogFormControlClass, "min-h-[72px] w-full resize-y")}
+              <DialogLabel htmlFor="task-desc">Description</DialogLabel>
+              <DialogTextarea
                 id="task-desc"
                 onChange={(event) => onDescriptionChange(event.target.value)}
-                rows={3}
                 value={description}
               />
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2 sm:gap-2">
               <div className="grid min-w-0 gap-1">
-                <span className={dialogFormLabelClass}>Status</span>
+                <DialogSpanLabel>
+                  Status<RequiredMark />
+                </DialogSpanLabel>
                 <Select onValueChange={(v) => onTaskStatusChange(v as TaskStatus)} value={taskStatus}>
                   <SelectTrigger
                     className="h-9 w-full !min-w-0 border-border bg-background"
@@ -124,7 +128,9 @@ export function TaskDialog({
               </div>
 
               <div className="grid min-w-0 gap-1">
-                <span className={dialogFormLabelClass}>Assignee</span>
+                <DialogSpanLabel>
+                  Assignee<RequiredMark />
+                </DialogSpanLabel>
                 <Select
                   onValueChange={(v) => onAssigneeIdChange(v === "none" ? "" : v)}
                   value={assigneeId || "none"}
@@ -148,7 +154,9 @@ export function TaskDialog({
             </div>
 
             <div className="grid min-w-0 gap-1">
-              <span className={dialogFormLabelClass}>Priority</span>
+              <DialogSpanLabel>
+                Priority<RequiredMark />
+              </DialogSpanLabel>
               <div className="flex min-h-9 gap-1 rounded-sm border border-toolbar-field-border bg-toolbar-field p-1">
                 {PRIORITIES.map((p) => (
                   <button
@@ -169,7 +177,7 @@ export function TaskDialog({
             </div>
 
             <div className="grid gap-1">
-              <span className={dialogFormLabelClass}>Due date</span>
+              <DialogSpanLabel>Due date</DialogSpanLabel>
               <Popover onOpenChange={setDuePopoverOpen} open={duePopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -195,6 +203,7 @@ export function TaskDialog({
                 </PopoverContent>
               </Popover>
             </div>
+
           </div>
 
           <DialogFooter className="mx-0 mb-0 gap-2 rounded-none border-border/60 bg-muted/30 px-4 py-3 sm:justify-end">

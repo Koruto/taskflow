@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useLayoutEffect, useState } from "react"
 
 import { login as loginRequest, register as registerRequest } from "@/lib/api/auth"
 import { configureApiClient } from "@/lib/api/client"
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null)
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     configureApiClient({
       getAccessToken: () => readStoredSession()?.token ?? null,
       onUnauthorized: logout,

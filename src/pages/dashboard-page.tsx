@@ -5,10 +5,11 @@ import { useAuth } from "@/contexts/auth-context"
 import { ApiError } from "@/lib/api/client"
 import { getProject, listProjects } from "@/lib/api/taskflow"
 import { priorityLabel } from "@/lib/project-task-utils"
+import { projectAccentStripClass } from "@/lib/project-accent"
 import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import { cn } from "@/lib/utils"
 import type { Project, Task, TaskStatus } from "@/types"
-import { FileText, Folder, Search } from "lucide-react"
+import { FileText, Folder, FolderKanban, Search } from "lucide-react"
 
 type TaskRow = Task & { project_name: string }
 
@@ -224,112 +225,157 @@ export function DashboardPage() {
             </span>
           </div>
 
-          <div className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <p className="text-sm font-medium text-muted-foreground">Total projects</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{projects.length}</p>
+          <div className="grid shrink-0 grid-cols-2 gap-2 xl:grid-cols-4 xl:gap-3">
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-3 xl:p-4">
+              <p className="text-xs font-medium text-muted-foreground xl:text-sm">Total projects</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-foreground xl:text-2xl">{projects.length}</p>
             </div>
 
-            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <p className="text-sm font-medium text-muted-foreground">Total tasks</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.totalTasks}</p>
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-3 xl:p-4">
+              <p className="text-xs font-medium text-muted-foreground xl:text-sm">Total tasks</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-foreground xl:text-2xl">{counts.totalTasks}</p>
             </div>
 
-            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <p className="text-sm font-medium text-muted-foreground">In review</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.inReview}</p>
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-3 xl:p-4">
+              <p className="text-xs font-medium text-muted-foreground xl:text-sm">In review</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-foreground xl:text-2xl">{counts.inReview}</p>
             </div>
 
-            <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <p className="text-sm font-medium text-muted-foreground">Done tasks</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.done}</p>
+            <div className="rounded-sm border border-page-panel-border bg-page-panel p-3 xl:p-4">
+              <p className="text-xs font-medium text-muted-foreground xl:text-sm">Done tasks</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-foreground xl:text-2xl">{counts.done}</p>
             </div>
           </div>
 
-          <section className="flex min-h-0 flex-1 flex-col gap-3 rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:justify-between sm:gap-4">
-                <h2 className="text-sm font-semibold">This week&apos;s tasks</h2>
-                <div className="relative w-full sm:max-w-md">
-                  <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-[0.9375rem]"
-                    onChange={(event) => setTableQuery(event.target.value)}
-                    placeholder="Search"
-                    type="search"
-                    value={tableQuery}
-                  />
-                </div>
+          {/* This week's tasks — desktop only */}
+          <section className="hidden min-h-0 flex-1 flex-col gap-0 rounded-sm border border-page-panel-border bg-page-panel p-4 md:flex">
+            <div className="flex shrink-0 flex-col gap-2 border-b border-page-panel-border pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <h2 className="flex h-8 items-center text-[0.9375rem] font-semibold leading-none text-foreground">
+                This week&apos;s tasks
+              </h2>
+              <div className="relative w-full sm:max-w-md">
+                <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-[0.9375rem]"
+                  onChange={(event) => setTableQuery(event.target.value)}
+                  placeholder="Search"
+                  type="search"
+                  value={tableQuery}
+                />
               </div>
+            </div>
 
-              <div className="min-h-0 flex-1 overflow-auto rounded-sm border-t border-page-panel-border-muted bg-muted/15">
-                <table className="w-full min-w-[52rem] table-fixed text-left text-[0.9375rem] leading-snug">
-                  <thead className="sticky top-0 z-10 bg-toolbar-field/80 text-sm text-muted-foreground backdrop-blur-sm">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <table className="w-full min-w-208 table-fixed text-left text-[0.9375rem] leading-snug">
+                <thead className="sticky top-0 z-10 bg-page-panel text-sm text-foreground/80 backdrop-blur-sm">
+                  <tr>
+                    <th className="p-0 font-medium" colSpan={5} scope="colgroup">
+                      <div className={cn(TASKS_TABLE_GRID, "border-b border-page-panel-border-muted px-3 py-2.5")}>
+                        <div>Task name</div>
+                        <div>Project</div>
+                        <div>Task status</div>
+                        <div>Priority</div>
+                        <div>Due Date</div>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="text-[0.9375rem] text-foreground">
+                  {filteredTable.length === 0 ? (
                     <tr>
-                      <th className="p-0 font-medium" colSpan={5} scope="colgroup">
-                        <div className={cn(TASKS_TABLE_GRID, "border-b border-page-panel-border-muted px-3 py-2.5")}>
-                          <div>Task name</div>
-                          <div>Project</div>
-                          <div>Task status</div>
-                          <div>Priority</div>
-                          <div>Due Date</div>
-                        </div>
-                      </th>
+                      <td className="px-3 py-8 text-center text-muted-foreground" colSpan={5}>
+                        No tasks due this week{tableQuery.trim() ? " match your search." : "."}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="text-[0.9375rem] text-foreground">
-                    {filteredTable.length === 0 ? (
-                      <tr>
-                        <td className="px-3 py-8 text-center text-muted-foreground" colSpan={5}>
-                          No tasks due this week{tableQuery.trim() ? " match your search." : "."}
+                  ) : (
+                    filteredTable.map((task) => (
+                      <tr
+                        className="group relative border-b border-border/60 transition-colors hover:bg-muted/55"
+                        key={task.id}
+                      >
+                        <td className="relative p-0" colSpan={5}>
+                          <Link
+                            aria-label={`Open project ${task.project_name}`}
+                            className="absolute inset-0 z-0 block"
+                            to={`/projects/${task.project_id}`}
+                          />
+                          <div
+                            className={cn(
+                              TASKS_TABLE_GRID,
+                              "pointer-events-none relative z-10 px-3 py-2.5"
+                            )}
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <FileText className="size-4 shrink-0 text-muted-foreground" />
+                              <span className="min-w-0 font-medium text-brand underline-offset-2 group-hover:underline">
+                                {task.title}
+                              </span>
+                            </div>
+                            <div className="text-muted-foreground">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-sm font-medium text-foreground",
+                                  projectChipClass(task.project_id)
+                                )}
+                              >
+                                <Folder className="size-3.5 shrink-0" />
+                                {task.project_name}
+                              </span>
+                            </div>
+                            <div className="text-muted-foreground">{taskStatusLabel(task.status)}</div>
+                            <div className="text-muted-foreground">{priorityLabel(task.priority)}</div>
+                            <div className="text-muted-foreground">{formatDue(task.due_date)}</div>
+                          </div>
                         </td>
                       </tr>
-                    ) : (
-                      filteredTable.map((task) => (
-                        <tr
-                          className="group relative border-b border-border/60 transition-colors hover:bg-muted/55"
-                          key={task.id}
-                        >
-                          <td className="relative p-0" colSpan={5}>
-                            <Link
-                              aria-label={`Open project ${task.project_name}`}
-                              className="absolute inset-0 z-0 block"
-                              to={`/projects/${task.project_id}`}
-                            />
-                            <div
-                              className={cn(
-                                TASKS_TABLE_GRID,
-                                "relative z-10 px-3 py-2.5 pointer-events-none"
-                              )}
-                            >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <FileText className="size-4 shrink-0 text-muted-foreground" />
-                                <span className="min-w-0 font-medium text-brand underline-offset-2 group-hover:underline">
-                                  {task.title}
-                                </span>
-                              </div>
-                              <div className="text-muted-foreground">
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-sm font-medium text-foreground",
-                                    projectChipClass(task.project_id)
-                                  )}
-                                >
-                                  <Folder className="size-3.5 shrink-0" />
-                                  {task.project_name}
-                                </span>
-                              </div>
-                              <div className="text-muted-foreground">{taskStatusLabel(task.status)}</div>
-                              <div className="text-muted-foreground">{priorityLabel(task.priority)}</div>
-                              <div className="text-muted-foreground">{formatDue(task.due_date)}</div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Projects list — mobile only */}
+          <section className="flex flex-col gap-2 md:hidden">
+            <h2 className="text-sm font-semibold">Your projects</h2>
+            {projects.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-sm border border-dashed border-page-panel-border bg-page-panel px-4 py-10 text-center">
+                <FolderKanban className="size-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No projects yet.</p>
               </div>
-            </section>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {projects.map((project) => (
+                  <li key={project.id}>
+                    <Link
+                      className={cn(
+                        "flex min-h-16 overflow-hidden rounded-sm border border-page-panel-border bg-page-panel shadow-sm",
+                        "transition-[border-color] hover:border-brand/40"
+                      )}
+                      to={`/projects/${project.id}`}
+                    >
+                      <div
+                        aria-hidden
+                        className={cn("w-[3px] shrink-0", projectAccentStripClass(project.id))}
+                      />
+                      <div className="min-w-0 flex-1 px-3 py-2.5">
+                        <p className="text-sm font-semibold leading-snug text-foreground">
+                          {project.name.trim() || "Untitled project"}
+                        </p>
+                        {project.description?.trim() ? (
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
+                            {project.description.trim()}
+                          </p>
+                        ) : (
+                          <p className="mt-0.5 text-xs text-muted-foreground/70">No description</p>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </>
       )}
     </div>

@@ -1,4 +1,5 @@
-import type { AuthUser, TaskPriority } from "@/types"
+import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
+import type { AuthUser, TaskPriority, TaskStatus } from "@/types"
 
 export function formatShortDate(iso: string | null): string {
   if (!iso) {
@@ -21,6 +22,18 @@ export function initialsForUser(users: AuthUser[], userId: string | null): strin
     return (parts[0]![0]! + parts[1]![0]!).toUpperCase()
   }
   return user.name.slice(0, 2).toUpperCase()
+}
+
+export function taskStatusLabel(status: TaskStatus): string {
+  return TASK_STATUS_COLUMNS.find((c) => c.id === status)?.label ?? status
+}
+
+/** Chip styles aligned with board column count badges. */
+export function taskStatusChipClassName(status: TaskStatus): string {
+  return (
+    TASK_STATUS_COLUMNS.find((c) => c.id === status)?.countBadgeClass ??
+    "border border-border bg-muted text-foreground"
+  )
 }
 
 export function priorityLabel(priority: TaskPriority): string {

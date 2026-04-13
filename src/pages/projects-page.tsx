@@ -3,12 +3,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DialogInput, DialogLabel, DialogTextarea } from "@/components/ui/dialog-field"
+import { ProjectEditDialog } from "@/components/project-detail/project-edit-dialog"
 import { ApiError } from "@/lib/api/client"
-import { dialogFormControlClass, dialogFormLabelClass } from "@/lib/dialog-form-classes"
-import { createProject, listProjects } from "@/lib/api/taskflow"
+import { createProject, listProjects, updateProject } from "@/lib/api/taskflow"
+import { projectAccentStripClass } from "@/lib/project-accent"
 import { cn } from "@/lib/utils"
 import type { Project } from "@/types"
-import { FolderKanban, Plus } from "lucide-react"
+import { FolderKanban, Pencil, Plus } from "lucide-react"
 
 export function ProjectsPage() {
   const location = useLocation()
@@ -20,6 +22,11 @@ export function ProjectsPage() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [isCreating, setIsCreating] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   async function loadProjects() {
     setIsLoading(true)
@@ -67,6 +74,36 @@ export function ProjectsPage() {
     }
   }
 
+  function openEditDialog(project: Project) {
+    setEditingProject(project)
+    setEditName(project.name)
+    setEditDescription(project.description ?? "")
+    setEditError(null)
+  }
+
+  async function handleSaveEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!editingProject) return
+    if (!editName.trim()) {
+      setEditError("Project name is required.")
+      return
+    }
+    setIsSaving(true)
+    setEditError(null)
+    try {
+      const updated = await updateProject(editingProject.id, {
+        name: editName.trim(),
+        description: editDescription.trim(),
+      })
+      setProjects((current) => current.map((p) => (p.id === updated.id ? updated : p)))
+      setEditingProject(null)
+    } catch {
+      setEditError("Unable to save project.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-1 py-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -103,12 +140,10 @@ export function ProjectsPage() {
 
             <div className="grid gap-3 px-4 py-3">
               <div className="grid gap-1">
-                <label className={dialogFormLabelClass} htmlFor="create-project-name">
-                  Name
-                </label>
-                <input
-                  autoFocus
-                  className={cn(dialogFormControlClass, "h-9 w-full")}
+                <DialogLabel htmlFor="create-project-name">
+                  Name<span aria-hidden className="ml-0.5 text-destructive">*</span>
+                </DialogLabel>
+                <DialogInput
                   id="create-project-name"
                   onChange={(event) => setName(event.target.value)}
                   placeholder="e.g. Website redesign"
@@ -116,15 +151,11 @@ export function ProjectsPage() {
                 />
               </div>
               <div className="grid gap-1">
-                <label className={dialogFormLabelClass} htmlFor="create-project-desc">
-                  Description
-                </label>
-                <textarea
-                  className={cn(dialogFormControlClass, "min-h-[72px] w-full resize-y")}
+                <DialogLabel htmlFor="create-project-desc">Description</DialogLabel>
+                <DialogTextarea
                   id="create-project-desc"
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="Optional context for your team"
-                  rows={3}
                   value={description}
                 />
               </div>
@@ -151,6 +182,23 @@ export function ProjectsPage() {
         </DialogContent>
       </Dialog>
 
+      <ProjectEditDialog
+        error={editError}
+        isSaving={isSaving}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingProject(null)
+            setEditError(null)
+          }
+        }}
+        onProjectDescriptionChange={setEditDescription}
+        onProjectNameChange={setEditName}
+        onSubmit={handleSaveEdit}
+        open={editingProject !== null}
+        projectDescription={editDescription}
+        projectName={editName}
+      />
+
       {errorMessage && !dialogOpen && <p className="text-caption text-destructive">{errorMessage}</p>}
       {isLoading && <p className="text-body text-muted-foreground">Loading projects…</p>}
       {!isLoading && projects.length === 0 && (
@@ -175,22 +223,49 @@ export function ProjectsPage() {
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => (
             <li className="min-h-0" key={project.id}>
-              <Link
+              <div
                 className={cn(
-                  "flex h-full min-h-[7.5rem] flex-col rounded-sm border border-page-panel-border bg-page-panel p-4 transition-colors",
-                  "hover:border-accent/35 hover:bg-muted/30"
+                  "group flex h-full min-h-[7.5rem] overflow-hidden rounded-sm border border-page-panel-border bg-page-panel shadow-sm",
+                  "transition-[box-shadow,transform,border-color] duration-200",
+                  "hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-border"
                 )}
-                to={`/projects/${project.id}`}
               >
-                <p className="text-base font-medium text-foreground">
-                  {project.name.trim() ? project.name : "Untitled project"}
-                </p>
-                {project.description != null && project.description.trim() !== "" ? (
-                  <p className="mt-1 flex-1 text-sm text-muted-foreground line-clamp-4">{project.description.trim()}</p>
-                ) : (
-                  <p className="mt-1 flex-1 text-sm text-muted-foreground">No description</p>
-                )}
-              </Link>
+                <div
+                  aria-hidden
+                  className={cn("w-0.5 shrink-0 sm:w-[3px]", projectAccentStripClass(project.id))}
+                />
+                <Link
+                  className="flex min-h-[7.5rem] min-w-0 flex-1 flex-col p-4 pr-2 transition-colors hover:bg-transparent"
+                  to={`/projects/${project.id}`}
+                >
+                  <p className="text-base font-semibold leading-snug text-foreground">
+                    {project.name.trim() ? project.name : "Untitled project"}
+                  </p>
+                  {project.description != null && project.description.trim() !== "" ? (
+                    <p className="mt-1 flex-1 text-sm leading-snug text-muted-foreground line-clamp-4">
+                      {project.description.trim()}
+                    </p>
+                  ) : (
+                    <p className="mt-1 flex-1 text-sm leading-snug text-muted-foreground/90">No description</p>
+                  )}
+                </Link>
+                <div className="relative z-10 flex shrink-0 flex-col p-2 pl-1" >
+                  <Button
+                    aria-label={`Edit ${project.name.trim() ? project.name : "project"}`}
+                    className="size-8 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:bg-muted/80 hover:text-foreground group-hover:opacity-100"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      openEditDialog(project)
+                    }}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
             </li>
           ))}
         </ul>

@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 
-import { ProjectEditDialog } from "@/components/project-detail/project-edit-dialog"
+import { useMediaQuery } from "@/hooks/use-media-query"
 import { ProjectTaskBoard } from "@/components/project-detail/project-task-board"
 import { ProjectTaskList } from "@/components/project-detail/project-task-list"
 import { TaskDialog } from "@/components/project-detail/task-dialog"
@@ -13,20 +13,30 @@ import {
   createTask,
   getProject,
   listUsers,
-  updateProject,
   updateTask,
 } from "@/lib/api/taskflow"
 import type { AuthUser, Project, Task, TaskPriority, TaskStatus } from "@/types"
 import { LayoutGrid, List, Plus } from "lucide-react"
 
+function initialProjectViewMode(): "board" | "list" {
+  if (typeof window === "undefined") {
+    return "board"
+  }
+  return window.matchMedia("(min-width: 768px)").matches ? "board" : "board"
+}
+
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [project, setProject] = useState<Project | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<AuthUser[]>([])
   const [statusFilter, setStatusFilter] = useState<"" | TaskStatus>("")
   const [assigneeFilter, setAssigneeFilter] = useState("")
-  const [viewMode, setViewMode] = useState<"board" | "list">("board")
+  const [viewMode, setViewMode] = useState<"board" | "list">(initialProjectViewMode)
+  const isMdUp = useMediaQuery("(min-width: 768px)")
+  const effectiveViewMode: "board" | "list" = isMdUp ? viewMode : "board"
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -39,11 +49,7 @@ export function ProjectDetailPage() {
   const [assigneeId, setAssigneeId] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [isSaving, setIsSaving] = useState(false)
-
-  const [projectDialogOpen, setProjectDialogOpen] = useState(false)
-  const [projectName, setProjectName] = useState("")
-  const [projectDescription, setProjectDescription] = useState("")
-  const [isSavingProject, setIsSavingProject] = useState(false)
+  const [taskDialogError, setTaskDialogError] = useState<string | null>(null)
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -92,6 +98,14 @@ export function ProjectDetailPage() {
     void loadProjectAndTasks()
   }, [projectId])
 
+  useEffect(() => {
+    const state = location.state as { openProjectEdit?: boolean } | null
+    if (!state?.openProjectEdit || !project) {
+      return
+    }
+    navigate(location.pathname, { replace: true, state: {} })
+  }, [location.pathname, location.state, navigate, project])
+
   function resetTaskForm() {
     setEditingTaskId(null)
     setTitle("")
@@ -100,6 +114,7 @@ export function ProjectDetailPage() {
     setPriority("medium")
     setAssigneeId("")
     setDueDate("")
+    setTaskDialogError(null)
   }
 
   function openCreateTaskDialog() {
@@ -118,22 +133,13 @@ export function ProjectDetailPage() {
     setTaskDialogOpen(true)
   }
 
-  function openProjectDialog() {
-    if (!project) {
-      return
-    }
-    setProjectName(project.name)
-    setProjectDescription(project.description ?? "")
-    setProjectDialogOpen(true)
-  }
-
   async function handleSaveTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!projectId) {
       return
     }
     if (!title.trim()) {
-      setErrorMessage("Task title is required.")
+      setTaskDialogError("Title is required.")
       return
     }
 
@@ -147,7 +153,7 @@ export function ProjectDetailPage() {
     }
 
     setIsSaving(true)
-    setErrorMessage(null)
+    setTaskDialogError(null)
     try {
       if (editingTaskId) {
         const updated = await updateTask(editingTaskId, payload)
@@ -159,43 +165,9 @@ export function ProjectDetailPage() {
       setTaskDialogOpen(false)
       resetTaskForm()
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "Unable to save task.")
+      setTaskDialogError(error instanceof ApiError ? error.message : "Unable to save task.")
     } finally {
       setIsSaving(false)
-    }
-  }
-
-  async function handleSaveProject(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!projectId || !projectName.trim()) {
-      setErrorMessage("Project name is required.")
-      return
-    }
-    setIsSavingProject(true)
-    setErrorMessage(null)
-    try {
-      const updated = await updateProject(projectId, {
-        name: projectName.trim(),
-        description: projectDescription.trim(),
-      })
-      setProject(updated)
-      setProjectDialogOpen(false)
-    } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "Unable to update project.")
-    } finally {
-      setIsSavingProject(false)
-    }
-  }
-
-  async function handleStatusChange(taskId: string, status: TaskStatus) {
-    const previous = tasks
-    setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status } : task)))
-    try {
-      const updated = await updateTask(taskId, { status })
-      setTasks((current) => current.map((task) => (task.id === taskId ? updated : task)))
-    } catch (error) {
-      setTasks(previous)
-      setErrorMessage(error instanceof ApiError ? error.message : "Unable to update task status.")
     }
   }
 
@@ -232,16 +204,15 @@ export function ProjectDetailPage() {
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-x-hidden px-1 py-1">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 pb-1 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <button
-            className="block w-full max-w-full cursor-pointer text-left text-base font-medium leading-none text-foreground underline-offset-2 hover:underline"
-            onClick={openProjectDialog}
+            className="block w-full max-w-full text-left text-base font-medium leading-none text-foreground underline-offset-2"
             type="button"
           >
             {project?.name ?? "Project"}
           </button>
-          <p className="mt-0.5 max-w-2xl text-body text-muted-foreground">
+          <p className="mt-0.5 max-w-2xl text-sm leading-snug text-muted-foreground">
             {project?.description != null && project.description.trim() !== ""
               ? project.description.trim()
               : "No description yet."}
@@ -257,22 +228,14 @@ export function ProjectDetailPage() {
         </Button>
       </div>
 
-      <ProjectEditDialog
-        isSaving={isSavingProject}
-        onOpenChange={setProjectDialogOpen}
-        onProjectDescriptionChange={setProjectDescription}
-        onProjectNameChange={setProjectName}
-        onSubmit={handleSaveProject}
-        open={projectDialogOpen}
-        projectDescription={projectDescription}
-        projectName={projectName}
-      />
+
 
       <TaskDialog
         assigneeId={assigneeId}
         description={description}
         dueDate={dueDate}
         editingTaskId={editingTaskId}
+        error={taskDialogError}
         isSaving={isSaving}
         onAssigneeIdChange={setAssigneeId}
         onDescriptionChange={setDescription}
@@ -306,7 +269,7 @@ export function ProjectDetailPage() {
               >
                 <SelectTrigger
                   aria-label="Filter by status"
-                  className="min-w-[8.5rem] max-w-[14rem]"
+                  className="min-w-34 max-w-56"
                   variant="segmented"
                 >
                   <SelectValue placeholder="All statuses" />
@@ -330,7 +293,7 @@ export function ProjectDetailPage() {
               >
                 <SelectTrigger
                   aria-label="Filter by assignee"
-                  className="min-w-[8.5rem] max-w-[14rem]"
+                  className="min-w-34 max-w-56"
                   variant="segmented"
                 >
                   <SelectValue placeholder="All assignees" />
@@ -347,7 +310,7 @@ export function ProjectDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 gap-1 rounded-sm border border-toolbar-field-border bg-toolbar-field p-1">
+        <div className="hidden shrink-0 gap-1 rounded-sm border border-toolbar-field-border bg-toolbar-field p-1 md:flex">
           <Button
             aria-pressed={viewMode === "board"}
             className="gap-1 rounded-sm"
@@ -376,8 +339,8 @@ export function ProjectDetailPage() {
       {errorMessage && <p className="text-caption text-destructive">{errorMessage}</p>}
       {isLoading && <p className="text-body text-muted-foreground">Loading project…</p>}
 
-      {!isLoading && viewMode === "board" && (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      {!isLoading && effectiveViewMode === "board" && (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
           <ProjectTaskBoard
             filteredTasks={filteredTasks}
             onAddTask={(columnId) => {
@@ -393,12 +356,21 @@ export function ProjectDetailPage() {
         </div>
       )}
 
-      {!isLoading && viewMode === "list" && (
-        <ProjectTaskList
-          onEditTask={openEditTaskDialog}
-          onStatusChange={(taskId, status) => void handleStatusChange(taskId, status)}
-          tasks={filteredTasks}
-        />
+      {!isLoading && effectiveViewMode === "list" && (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="tf-scrollbar-minimal min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+            <ProjectTaskList
+              onAddTask={(columnId) => {
+                resetTaskForm()
+                setTaskStatus(columnId)
+                setTaskDialogOpen(true)
+              }}
+              onEditTask={openEditTaskDialog}
+              tasks={filteredTasks}
+              users={users}
+            />
+          </div>
+        </div>
       )}
 
       {!isLoading && (

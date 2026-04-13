@@ -82,7 +82,6 @@ export function SortableTaskCard({
         isDragging={isDragging}
         listeners={mergedListeners}
         onCardClick={handleCardClick}
-        onEdit={onEdit}
         onKeyDown={(event) => {
           listeners?.onKeyDown?.(event)
           if (event.defaultPrevented) {

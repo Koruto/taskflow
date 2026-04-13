@@ -88,7 +88,7 @@ export function ProjectTaskBoard({
       sensors={sensors}
     >
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
-        <div className="grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-[minmax(0,1fr)] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-[minmax(14rem,1fr)] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {TASK_STATUS_COLUMNS.map((column) => {
             const ids = columnTaskIds[column.id]
             return (

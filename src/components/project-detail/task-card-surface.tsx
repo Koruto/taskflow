@@ -8,7 +8,7 @@ import {
 } from "@/lib/project-task-utils"
 import { cn } from "@/lib/utils"
 import type { AuthUser, Task } from "@/types"
-import { Calendar, Pencil } from "lucide-react"
+import { Calendar } from "lucide-react"
 
 export type TaskCardSurfaceProps = {
   task: Task
@@ -17,7 +17,6 @@ export type TaskCardSurfaceProps = {
   style?: React.CSSProperties
   /** When false, renders a static preview (e.g. drag overlay) without edit affordances. */
   interactive?: boolean
-  onEdit?: (task: Task) => void
   onCardClick?: (event: React.MouseEvent) => void
   onKeyDown?: (event: React.KeyboardEvent) => void
   /** Merged with outer element for sortable / draggable. */
@@ -37,7 +36,6 @@ export function TaskCardSurface({
   className,
   style,
   interactive = true,
-  onEdit,
   onCardClick,
   onKeyDown,
   listeners,
@@ -53,7 +51,7 @@ export function TaskCardSurface({
     <div
       className={cn(
         "group w-full min-w-0 rounded-md border border-border/80 bg-card p-3 text-left shadow-sm transition-[box-shadow,background-color,border-color]",
-        !isOverlay && "hover:border-border hover:shadow-md",
+        !isOverlay && "hover:border-brand/40 hover:shadow-md",
         interactive && "cursor-grab active:cursor-grabbing",
         isDragging && "relative z-20 opacity-40",
         isOverlay && "shadow-md",
@@ -76,20 +74,6 @@ export function TaskCardSurface({
         >
           {priorityLabel(task.priority)}
         </span>
-        {interactive && onEdit ? (
-          <button
-            aria-label="Edit task"
-            className="-mr-1 -mt-0.5 shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted/70 hover:text-foreground group-hover:opacity-100"
-            onClick={(event) => {
-              event.stopPropagation()
-              onEdit(task)
-            }}
-            onPointerDown={(event) => event.stopPropagation()}
-            type="button"
-          >
-            <Pencil className="size-3.5" />
-          </button>
-        ) : null}
       </div>
 
       <div className="mt-2 w-full min-w-0">
@@ -100,10 +84,14 @@ export function TaskCardSurface({
       </div>
 
       <div className="mt-3 flex w-full min-w-0 items-center justify-between gap-2 border-t border-border/55 pt-3">
-        <div className="flex min-w-0 items-center gap-1 text-[11px] leading-none text-muted-foreground">
-          <Calendar className="size-3.5 shrink-0 opacity-80" aria-hidden />
-          <span className="tabular-nums">{formatShortDate(task.due_date)}</span>
-        </div>
+        {task.due_date ? (
+          <div className="flex min-w-0 items-center gap-1 text-[11px] leading-none text-muted-foreground">
+            <Calendar className="size-3.5 shrink-0 opacity-80" aria-hidden />
+            <span className="tabular-nums">{formatShortDate(task.due_date)}</span>
+          </div>
+        ) : (
+          <span className="text-[11px] leading-none text-muted-foreground/45">No due date</span>
+        )}
         <div className="flex min-w-0 max-w-[55%] items-center justify-end gap-1.5 text-[11px] leading-none text-muted-foreground">
           {named ? (
             <>
