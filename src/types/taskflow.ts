@@ -22,5 +22,5 @@ export type Task = {
   updated_at: string
 }
 
-/** Task plus project name for cross-project views (e.g. My tasks). */
+/** Task plus project name for cross-project views (e.g. dashboard). */
 export type TaskWithProjectMeta = Task & { project_name: string }

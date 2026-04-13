@@ -5,8 +5,17 @@ import "@/lib/env"
 import "./index.css"
 import App from "./App.tsx"
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
+async function bootstrap() {
+  if (import.meta.env.DEV) {
+    const { startMockApi } = await import("@/lib/api/msw/bootstrap")
+    await startMockApi()
+  }
+
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  )
+}
+
+void bootstrap()

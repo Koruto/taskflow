@@ -50,7 +50,6 @@ export function AppHeader() {
   const { theme, toggleTheme } = useTheme()
 
   const matchDashboard = useMatch({ path: "/dashboard", end: true })
-  const matchTasks = useMatch({ path: "/tasks", end: true })
   const matchProjects = useMatch({ path: "/projects", end: true })
   const matchProjectDetail = useMatch("/projects/:projectId")
 
@@ -63,15 +62,6 @@ export function AppHeader() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbPage>Dashboard</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      )
-    }
-    if (matchTasks) {
-      return (
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage>My tasks</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       )

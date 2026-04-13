@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +23,6 @@ import type { AuthUser, Project, Task, TaskPriority, TaskStatus } from "@/types"
 import { cn } from "@/lib/utils"
 import {
   AlignLeft,
-  ArrowLeft,
   CalendarDays,
   Filter,
   LayoutGrid,
@@ -278,43 +277,35 @@ export function ProjectDetailPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 px-1 py-1">
-      <div className="flex flex-col gap-4">
-        <Link
-          className="inline-flex w-fit items-center gap-1 text-body text-muted-foreground hover:text-foreground"
-          to="/projects"
-        >
-          <ArrowLeft className="size-4" />
-          All projects
-        </Link>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold tracking-tight">{project?.name ?? "Project"}</h1>
-              <Button
-                aria-label="Edit project"
-                className="size-8 shrink-0"
-                onClick={openProjectDialog}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <Pencil className="size-4" />
-              </Button>
-            </div>
-            <p className="mt-1 max-w-2xl text-body text-muted-foreground">
-              {project?.description?.trim() ? project.description : "No description yet."}
-            </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-base font-medium text-foreground">{project?.name ?? "Project"}</h1>
+            <Button
+              aria-label="Edit project"
+              className="size-8 shrink-0"
+              onClick={openProjectDialog}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil className="size-4" />
+            </Button>
           </div>
-          <Button
-            className="gap-2 self-start rounded-sm bg-teal-700 text-white hover:bg-teal-800"
-            onClick={openCreateTaskDialog}
-            type="button"
-          >
-            <Plus className="size-4" />
-            Create new task
-          </Button>
+            <p className="mt-1 max-w-2xl text-body text-muted-foreground">
+              {project?.description != null && project.description.trim() !== ""
+                ? project.description.trim()
+                : "No description yet."}
+            </p>
         </div>
+        <Button
+          className="gap-2 self-start rounded-sm bg-brand text-brand-foreground hover:bg-brand-hover"
+          onClick={openCreateTaskDialog}
+          type="button"
+        >
+          <Plus className="size-4" />
+          Create new task
+        </Button>
       </div>
 
       <Dialog
@@ -323,7 +314,7 @@ export function ProjectDetailPage() {
         }}
         open={projectDialogOpen}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md [&_input]:rounded-sm [&_select]:rounded-sm [&_textarea]:rounded-sm">
           <form className="grid gap-4" onSubmit={handleSaveProject}>
             <DialogHeader>
               <DialogTitle>Edit project</DialogTitle>
@@ -333,7 +324,7 @@ export function ProjectDetailPage() {
               <label className="text-body">
                 Name
                 <input
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-body outline-none ring-ring/40 focus-visible:ring-2"
+                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setProjectName(event.target.value)}
                   value={projectName}
                 />
@@ -341,7 +332,7 @@ export function ProjectDetailPage() {
               <label className="text-body">
                 Description
                 <textarea
-                  className="mt-1 min-h-[88px] w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-body outline-none ring-ring/40 focus-visible:ring-2"
+                  className="focus-ring-accent mt-1 min-h-[88px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setProjectDescription(event.target.value)}
                   rows={3}
                   value={projectDescription}
@@ -352,7 +343,11 @@ export function ProjectDetailPage() {
               <Button onClick={() => setProjectDialogOpen(false)} type="button" variant="outline">
                 Cancel
               </Button>
-              <Button disabled={isSavingProject} type="submit">
+              <Button
+                className="bg-brand text-brand-foreground hover:bg-brand-hover"
+                disabled={isSavingProject}
+                type="submit"
+              >
                 {isSavingProject ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
@@ -369,7 +364,7 @@ export function ProjectDetailPage() {
         }}
         open={taskDialogOpen}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md [&_input]:rounded-sm [&_select]:rounded-sm [&_textarea]:rounded-sm">
           <form className="grid gap-4" onSubmit={handleSaveTask}>
             <DialogHeader>
               <DialogTitle>{editingTaskId ? "Edit task" : "New task"}</DialogTitle>
@@ -381,7 +376,7 @@ export function ProjectDetailPage() {
               <label className="text-body">
                 Title
                 <input
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-body outline-none ring-ring/40 focus-visible:ring-2"
+                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setTitle(event.target.value)}
                   value={title}
                 />
@@ -389,7 +384,7 @@ export function ProjectDetailPage() {
               <label className="text-body">
                 Description
                 <textarea
-                  className="mt-1 min-h-[80px] w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-body outline-none ring-ring/40 focus-visible:ring-2"
+                  className="focus-ring-accent mt-1 min-h-[80px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setDescription(event.target.value)}
                   rows={3}
                   value={description}
@@ -399,7 +394,7 @@ export function ProjectDetailPage() {
                 <label className="text-body">
                   Status
                   <select
-                    className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
+                    className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                     onChange={(event) => setTaskStatus(event.target.value as TaskStatus)}
                     value={taskStatus}
                   >
@@ -411,7 +406,7 @@ export function ProjectDetailPage() {
                 <label className="text-body">
                   Priority
                   <select
-                    className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
+                    className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                     onChange={(event) => setPriority(event.target.value as TaskPriority)}
                     value={priority}
                   >
@@ -424,7 +419,7 @@ export function ProjectDetailPage() {
               <label className="text-body">
                 Assignee
                 <select
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-body"
+                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setAssigneeId(event.target.value)}
                   value={assigneeId}
                 >
@@ -439,7 +434,7 @@ export function ProjectDetailPage() {
               <label className="text-body">
                 Due date
                 <input
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-body"
+                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setDueDate(event.target.value)}
                   type="date"
                   value={dueDate}
@@ -457,7 +452,7 @@ export function ProjectDetailPage() {
                 Cancel
               </Button>
               <Button
-                className="bg-teal-700 hover:bg-teal-800"
+                className="bg-brand text-brand-foreground hover:bg-brand-hover"
                 disabled={isSaving}
                 type="submit"
               >
@@ -472,7 +467,7 @@ export function ProjectDetailPage() {
         <div className="relative max-w-md flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            className="h-10 w-full rounded-full border border-border/60 bg-muted/40 py-2 pl-10 pr-4 text-body outline-none ring-ring/30 focus-visible:ring-2"
+            className="focus-ring-accent h-10 w-full rounded-full border border-toolbar-field-border bg-toolbar-field py-2 pl-10 pr-4 text-body text-foreground"
             onChange={(event) => setTaskSearch(event.target.value)}
             placeholder="Search tasks"
             type="search"
@@ -483,7 +478,7 @@ export function ProjectDetailPage() {
           <label className="text-caption text-muted-foreground">
             <span className="sr-only">Status filter</span>
             <select
-              className="h-10 rounded-full border border-border/60 bg-muted/40 px-3 py-2 text-body"
+              className="h-10 rounded-full border border-toolbar-field-border bg-toolbar-field px-3 py-2 text-body text-foreground"
               onChange={(event) => setStatusFilter(event.target.value as "" | TaskStatus)}
               value={statusFilter}
             >
@@ -496,7 +491,7 @@ export function ProjectDetailPage() {
           <label className="text-caption text-muted-foreground">
             <span className="sr-only">Assignee filter</span>
             <select
-              className="h-10 rounded-full border border-border/60 bg-muted/40 px-3 py-2 text-body"
+              className="h-10 rounded-full border border-toolbar-field-border bg-toolbar-field px-3 py-2 text-body text-foreground"
               onChange={(event) => setAssigneeFilter(event.target.value)}
               value={assigneeFilter}
             >
@@ -508,15 +503,19 @@ export function ProjectDetailPage() {
               ))}
             </select>
           </label>
-          <Button className="h-10 gap-2 rounded-full border border-border/60 bg-muted/40" type="button" variant="ghost">
+          <Button
+            className="h-10 gap-2 rounded-full border border-toolbar-field-border bg-toolbar-field text-foreground hover:bg-toolbar-field/90"
+            type="button"
+            variant="ghost"
+          >
             <Filter className="size-4" />
             Filter
           </Button>
         </div>
-        <div className="flex items-center gap-1 rounded-sm border border-border/60 bg-muted/30 p-1">
+        <div className="flex items-center gap-1 rounded-sm border border-toolbar-field-border bg-toolbar-field p-1">
           <Button
             aria-pressed={viewMode === "board"}
-            className="gap-1 rounded-lg"
+            className="gap-1 rounded-sm"
             onClick={() => setViewMode("board")}
             size="sm"
             type="button"
@@ -527,7 +526,7 @@ export function ProjectDetailPage() {
           </Button>
           <Button
             aria-pressed={viewMode === "list"}
-            className="gap-1 rounded-lg"
+            className="gap-1 rounded-sm"
             onClick={() => setViewMode("list")}
             size="sm"
             type="button"
@@ -549,7 +548,7 @@ export function ProjectDetailPage() {
             return (
               <section
                 className={cn(
-                  "flex min-h-[280px] flex-col rounded-sm border border-border/40 p-3 shadow-sm",
+                  "flex min-h-[280px] flex-col rounded-sm border border-border/40 p-3",
                   column.surfaceClass
                 )}
                 key={column.id}
@@ -558,14 +557,14 @@ export function ProjectDetailPage() {
                   <div className="flex min-w-0 items-center gap-2">
                     <span className={cn("size-2 shrink-0 rounded-full", column.dotClass)} />
                     <h2 className="truncate text-sm font-semibold">{column.label}</h2>
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background/80 text-caption font-medium text-muted-foreground shadow-sm">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background/80 text-caption font-medium text-muted-foreground">
                       {columnTasks.length}
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
                     <Button
                       aria-label={`Add task to ${column.label}`}
-                      className="size-8 rounded-lg"
+                      className="size-8 rounded-sm"
                       onClick={() => {
                         resetTaskForm()
                         setTaskStatus(column.id)
@@ -579,7 +578,7 @@ export function ProjectDetailPage() {
                     </Button>
                     <button
                       aria-label="Column menu"
-                      className="rounded-lg p-1 text-muted-foreground hover:bg-background/60"
+                      className="rounded-sm p-1 text-muted-foreground hover:bg-background/60"
                       type="button"
                     >
                       <MoreHorizontal className="size-4" />
@@ -594,7 +593,7 @@ export function ProjectDetailPage() {
                   )}
                   {columnTasks.map((task) => (
                     <div
-                      className="rounded-sm border border-border/50 bg-card p-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
+                      className="rounded-sm border border-border/50 bg-card p-3.5 text-left transition-colors hover:border-border"
                       key={task.id}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -630,7 +629,7 @@ export function ProjectDetailPage() {
                       ) : null}
                       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/40 pt-3 text-caption text-muted-foreground">
                         <span
-                          className="flex size-8 items-center justify-center rounded-full bg-teal-600/15 text-caption font-semibold text-teal-900"
+                          className="flex size-8 items-center justify-center rounded-full bg-brand/15 text-caption font-semibold text-brand-on-subtle"
                           title="Assignee"
                         >
                           {initialsForUser(users, task.assignee_id)}
@@ -658,7 +657,7 @@ export function ProjectDetailPage() {
           ) : (
             filteredTasks.map((task) => (
               <div
-                className="flex flex-col gap-3 rounded-sm border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-sm border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
                 key={task.id}
               >
                 <div className="min-w-0">
@@ -696,7 +695,7 @@ export function ProjectDetailPage() {
       )}
 
       {!isLoading && (
-        <footer className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border/50 bg-muted/20 px-4 py-3 text-caption text-muted-foreground">
+        <footer className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-page-panel-border-muted bg-toolbar-field/40 px-4 py-3 text-caption text-muted-foreground">
           <span>
             Not started: {tasksForColumn("todo").length} · In progress: {tasksForColumn("in_progress").length} ·
             Completed: {tasksForColumn("done").length}

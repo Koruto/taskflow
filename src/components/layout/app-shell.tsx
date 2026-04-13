@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { AppHeader } from "@/components/layout/app-header"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { CheckSquare, FolderKanban, LayoutDashboard, Plus } from "lucide-react"
+import { FolderKanban, LayoutDashboard, Plus } from "lucide-react"
 
 export function AppShell() {
   const navigate = useNavigate()
@@ -12,7 +12,7 @@ export function AppShell() {
     <div className="flex min-h-svh w-full flex-col bg-zinc-100 dark:bg-zinc-950">
       <div className="flex shrink-0 border-b border-border bg-white dark:bg-zinc-950">
         <div className="flex h-14 w-64 shrink-0 items-center gap-2 border-r border-border px-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-teal-800 text-xs font-bold text-white">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-brand-logo text-xs font-bold text-brand-on-mark">
             T
           </div>
           <div className="min-w-0">
@@ -31,7 +31,7 @@ export function AppShell() {
                 cn(
                   "flex items-center gap-2 rounded-sm px-2.5 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-teal-600/10 text-foreground dark:bg-teal-500/15"
+                    ? "bg-brand-sidebar-active text-foreground"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 )
               }
@@ -46,22 +46,7 @@ export function AppShell() {
                 cn(
                   "flex items-center gap-2 rounded-sm px-2.5 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-teal-600/10 text-foreground dark:bg-teal-500/15"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                )
-              }
-              end
-              to="/tasks"
-            >
-              <CheckSquare className="size-4 shrink-0 opacity-90" />
-              My tasks
-            </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 rounded-sm px-2.5 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-teal-600/10 text-foreground dark:bg-teal-500/15"
+                    ? "bg-brand-sidebar-active text-foreground"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 )
               }
@@ -74,7 +59,7 @@ export function AppShell() {
 
           <div className="border-t border-border p-2">
             <Button
-              className="h-8 w-full gap-1.5 rounded-sm bg-teal-700 text-sm text-white hover:bg-teal-800"
+              className="h-8 w-full gap-1.5 rounded-sm bg-brand text-sm text-brand-foreground hover:bg-brand-hover"
               onClick={() => navigate("/projects", { state: { openCreateProject: true } })}
               type="button"
             >

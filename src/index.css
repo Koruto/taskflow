@@ -10,7 +10,21 @@
   --color-background: #f4f9ff;
   --color-surface: #faffff;
   --color-foreground: #141b24;
-  --color-accent: #0073cf;
+  /* Primary brand accent — hue for CTAs, rings, nav; single source for UI */
+  --brand: oklch(0.44 0.085 191);
+  --brand-hover: oklch(0.38 0.085 191);
+  --brand-foreground: oklch(0.99 0 0);
+  --brand-logo: oklch(0.38 0.07 191);
+  --brand-emphasis: oklch(0.58 0.11 191);
+  --brand-chart-deep: oklch(0.4 0.075 191);
+  --brand-chart-mid: oklch(0.6 0.12 191);
+  --brand-on-subtle: oklch(0.3 0.06 191);
+  --brand-sidebar-active: color-mix(in oklch, var(--brand) 12%, transparent);
+  --chart-positive: oklch(0.55 0.19 145);
+  --chart-negative: oklch(0.55 0.22 25);
+  --chart-neutral: oklch(0.55 0.04 250);
+  --brand-on-mark: oklch(0.99 0 0);
+  --color-accent: var(--brand);
   --color-destructive: #d33a3c;
 
   /* Derived tokens (opacity / mix from core colors) */
@@ -125,13 +139,34 @@
   --sidebar-border: oklch(0.922 0 0);
 
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Dashboard / project shells — surfaces & light borders (use via theme tokens) */
+  --page-panel: oklch(1 0 0);
+  --page-panel-border: color-mix(in oklch, var(--foreground) 7%, transparent);
+  --page-panel-border-muted: color-mix(in oklch, var(--foreground) 10%, transparent);
+  --page-panel-border-subtle: color-mix(in oklch, var(--foreground) 6%, transparent);
+  --toolbar-field: oklch(1 0 0);
+  --toolbar-field-border: color-mix(in oklch, var(--foreground) 11%, transparent);
 }
 
 :root[data-theme="dark"] {
   --color-background: #040a11;
   --color-surface: #0b121a;
   --color-foreground: #dee9f5;
-  --color-accent: #40a9ff;
+  --brand: oklch(0.62 0.11 195);
+  --brand-hover: oklch(0.56 0.11 195);
+  --brand-foreground: oklch(0.12 0.03 195);
+  --brand-logo: oklch(0.48 0.09 195);
+  --brand-emphasis: oklch(0.72 0.13 195);
+  --brand-chart-deep: oklch(0.55 0.1 195);
+  --brand-chart-mid: oklch(0.72 0.13 195);
+  --brand-on-subtle: oklch(0.88 0.04 195);
+  --brand-sidebar-active: color-mix(in oklch, var(--brand-emphasis) 18%, transparent);
+  --chart-positive: oklch(0.65 0.2 145);
+  --chart-negative: oklch(0.65 0.2 25);
+  --chart-neutral: oklch(0.65 0.04 250);
+  --brand-on-mark: oklch(0.99 0 0);
+  --color-accent: var(--brand);
   --color-destructive: #ff645f;
 }
 
@@ -160,8 +195,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
+  --color-accent-foreground: var(--brand-foreground);
+  --color-accent: var(--brand);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -174,6 +209,25 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-toolbar-field-border: var(--toolbar-field-border);
+  --color-toolbar-field: var(--toolbar-field);
+  --color-page-panel-border-subtle: var(--page-panel-border-subtle);
+  --color-page-panel-border-muted: var(--page-panel-border-muted);
+  --color-page-panel-border: var(--page-panel-border);
+  --color-page-panel: var(--page-panel);
+  --color-chart-neutral: var(--chart-neutral);
+  --color-chart-negative: var(--chart-negative);
+  --color-chart-positive: var(--chart-positive);
+  --color-brand-on-subtle: var(--brand-on-subtle);
+  --color-brand-chart-mid: var(--brand-chart-mid);
+  --color-brand-chart-deep: var(--brand-chart-deep);
+  --color-brand-emphasis: var(--brand-emphasis);
+  --color-brand-logo: var(--brand-logo);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand: var(--brand);
+  --color-brand-on-mark: var(--brand-on-mark);
+  --color-brand-sidebar-active: var(--brand-sidebar-active);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -215,6 +269,33 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  --page-panel: oklch(0.22 0.008 265);
+  --page-panel-border: oklch(1 0 0 / 11%);
+  --page-panel-border-muted: oklch(1 0 0 / 15%);
+  --page-panel-border-subtle: oklch(1 0 0 / 8%);
+  --toolbar-field: oklch(0.27 0.01 265);
+  --toolbar-field-border: oklch(1 0 0 / 14%);
+  --brand: oklch(0.62 0.11 195);
+  --brand-hover: oklch(0.56 0.11 195);
+  --brand-foreground: oklch(0.12 0.03 195);
+  --brand-logo: oklch(0.48 0.09 195);
+  --brand-emphasis: oklch(0.72 0.13 195);
+  --brand-chart-deep: oklch(0.55 0.1 195);
+  --brand-chart-mid: oklch(0.72 0.13 195);
+  --brand-on-subtle: oklch(0.88 0.04 195);
+  --brand-sidebar-active: color-mix(in oklch, var(--brand-emphasis) 18%, transparent);
+  --chart-positive: oklch(0.65 0.2 145);
+  --chart-negative: oklch(0.65 0.2 25);
+  --chart-neutral: oklch(0.65 0.04 250);
+  --brand-on-mark: oklch(0.99 0 0);
+  --color-accent: var(--brand);
+}
+
+@layer components {
+  .focus-ring-accent {
+    @apply outline-none ring-accent/25 focus-visible:ring-2;
+  }
 }
 
 @layer base {

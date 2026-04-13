@@ -53,7 +53,7 @@ export function LoginPage() {
       await login(demoUserCredentials)
       navigate((location.state as { from?: string } | null)?.from ?? "/dashboard", { replace: true })
     } catch {
-      setError("root", { message: "Demo login failed. Is the mock API running on port 4000?" })
+      setError("root", { message: "Demo login failed. Check the browser console and Network tab." })
     } finally {
       setIsDemoSubmitting(false)
     }

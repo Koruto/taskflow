@@ -19,26 +19,94 @@ type CreateTaskInput = {
 
 type UpdateTaskInput = Partial<CreateTaskInput>
 
-export function listProjects(): Promise<{ projects: Project[] }> {
-  return apiRequest("/projects")
+function normalizeProject(raw: unknown): Project {
+  if (raw === null || typeof raw !== "object") {
+    return { id: "", name: "", description: undefined, owner_id: "", created_at: "" }
+  }
+  const o = raw as Record<string, unknown>
+  const desc = o.description
+  const description =
+    typeof desc === "string" ? desc : desc === null || desc === undefined ? undefined : String(desc)
+  return {
+    id: String(o.id ?? ""),
+    name: String(o.name ?? o.title ?? o.project_name ?? ""),
+    description,
+    owner_id: String(o.owner_id ?? o.ownerId ?? ""),
+    created_at: String(o.created_at ?? o.createdAt ?? ""),
+  }
 }
 
-export function createProject(input: CreateProjectInput): Promise<Project> {
-  return apiRequest("/projects", {
+function extractProjectsArray(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+  if (payload !== null && typeof payload === "object") {
+    const o = payload as Record<string, unknown>
+    if (Array.isArray(o.projects)) {
+      return o.projects
+    }
+    if (Array.isArray(o.data)) {
+      return o.data
+    }
+    const data = o.data
+    if (data !== null && typeof data === "object") {
+      const inner = data as Record<string, unknown>
+      if (Array.isArray(inner.projects)) {
+        return inner.projects
+      }
+    }
+  }
+  return []
+}
+
+export async function listProjects(): Promise<{ projects: Project[] }> {
+  const payload = await apiRequest<unknown>("/projects")
+  return { projects: extractProjectsArray(payload).map(normalizeProject) }
+}
+
+export async function createProject(input: CreateProjectInput): Promise<Project> {
+  const raw = await apiRequest<unknown>("/projects", {
     method: "POST",
     body: JSON.stringify(input),
   })
+  if (raw !== null && typeof raw === "object" && "project" in raw) {
+    return normalizeProject((raw as { project: unknown }).project)
+  }
+  return normalizeProject(raw)
 }
 
-export function updateProject(projectId: string, input: UpdateProjectInput): Promise<Project> {
-  return apiRequest(`/projects/${projectId}`, {
+export async function updateProject(projectId: string, input: UpdateProjectInput): Promise<Project> {
+  const raw = await apiRequest<unknown>(`/projects/${projectId}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   })
+  if (raw !== null && typeof raw === "object" && "project" in raw) {
+    return normalizeProject((raw as { project: unknown }).project)
+  }
+  return normalizeProject(raw)
 }
 
-export function getProject(projectId: string): Promise<Project & { tasks: Task[] }> {
-  return apiRequest(`/projects/${projectId}`)
+export async function getProject(projectId: string): Promise<Project & { tasks: Task[] }> {
+  const raw = await apiRequest<unknown>(`/projects/${projectId}`)
+  if (raw === null || typeof raw !== "object") {
+    return {
+      id: projectId,
+      name: "",
+      description: undefined,
+      owner_id: "",
+      created_at: "",
+      tasks: [],
+    }
+  }
+  const o = raw as Record<string, unknown>
+  const inner = o.project !== null && typeof o.project === "object" ? (o.project as Record<string, unknown>) : null
+  const base = inner ?? o
+  const taskList = Array.isArray(o.tasks)
+    ? o.tasks
+    : Array.isArray(base.tasks)
+      ? base.tasks
+      : []
+  return { ...normalizeProject(base), tasks: taskList as Task[] }
 }
 
 export function listProjectTasks(

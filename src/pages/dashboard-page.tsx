@@ -70,10 +70,18 @@ function MetricSpark({ variant }: { variant: "up" | "down" | "flat" }) {
       : variant === "down"
         ? "0,4 8,12 16,10 24,20 32,16 40,24 48,22"
         : "0,14 8,12 16,14 24,13 32,14 40,13 48,14"
-  const stroke = variant === "up" ? "#16a34a" : variant === "down" ? "#dc2626" : "#64748b"
+  const strokeClass =
+    variant === "up" ? "text-chart-positive" : variant === "down" ? "text-chart-negative" : "text-chart-neutral"
   return (
-    <svg aria-hidden className="h-8 w-20 shrink-0" viewBox="0 0 48 24">
-      <polyline fill="none" points={pts} stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    <svg aria-hidden className={cn("h-8 w-20 shrink-0", strokeClass)} viewBox="0 0 48 24">
+      <polyline
+        fill="none"
+        points={pts}
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
     </svg>
   )
 }
@@ -203,7 +211,6 @@ export function DashboardPage() {
         <h1 className="text-base font-medium text-foreground">
           Welcome back, <span className="font-semibold">{firstName}</span>
         </h1>
-        <p className="mt-0.5 text-caption text-muted-foreground">Workspace overview</p>
       </div>
 
       {errorMessage && <p className="text-caption text-destructive">{errorMessage}</p>}
@@ -211,7 +218,7 @@ export function DashboardPage() {
 
       {!isLoading && (
         <>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-sm border border-border/60 bg-white px-3 py-2 text-sm text-muted-foreground dark:bg-zinc-950/50">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-sm border border-page-panel-border bg-page-panel px-3 py-2 text-sm text-muted-foreground">
             <span>
               <span className="font-semibold tabular-nums text-foreground">{summary.dueToday}</span> tasks due today
             </span>
@@ -227,7 +234,7 @@ export function DashboardPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="flex flex-col justify-between rounded-sm border border-border/60 bg-white p-4 dark:bg-zinc-950/50">
+            <div className="flex flex-col justify-between rounded-sm border border-page-panel-border bg-page-panel p-4">
               <div>
                 <p className="text-caption font-medium text-muted-foreground">Total projects</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums">{projects.length}</p>
@@ -241,7 +248,7 @@ export function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-col justify-between rounded-sm border border-border/60 bg-white p-4 dark:bg-zinc-950/50">
+            <div className="flex flex-col justify-between rounded-sm border border-page-panel-border bg-page-panel p-4">
               <div>
                 <p className="text-caption font-medium text-muted-foreground">Total tasks</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums">{counts.totalTasks}</p>
@@ -250,12 +257,12 @@ export function DashboardPage() {
               <div className="mt-3 flex items-end justify-between gap-2">
                 <MetricSpark variant="down" />
                 <Button asChild className="h-7 rounded-sm px-2 text-xs" size="sm" variant="outline">
-                  <Link to="/tasks">View</Link>
+                  <Link to="/dashboard">View</Link>
                 </Button>
               </div>
             </div>
 
-            <div className="flex flex-col justify-between rounded-sm border border-border/60 bg-white p-4 dark:bg-zinc-950/50">
+            <div className="flex flex-col justify-between rounded-sm border border-page-panel-border bg-page-panel p-4">
               <div>
                 <p className="text-caption font-medium text-muted-foreground">In progress</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums">{counts.inProgress}</p>
@@ -271,30 +278,35 @@ export function DashboardPage() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
-            <section className="rounded-sm border border-border/60 bg-white p-4 dark:bg-zinc-950/50 lg:col-span-2">
+            <section className="rounded-sm border border-page-panel-border bg-page-panel p-4 lg:col-span-2">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-sm font-semibold">Today&apos;s tasks</h2>
                 <div className="flex flex-1 flex-wrap items-center gap-2 sm:max-w-md sm:justify-end">
                   <div className="relative min-w-40 flex-1">
                     <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                     <input
-                      className="h-8 w-full rounded-sm border border-border/60 bg-muted/30 py-1 pl-8 pr-2 text-sm outline-none ring-ring/30 focus-visible:ring-1"
+                      className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-sm"
                       onChange={(event) => setTableQuery(event.target.value)}
                       placeholder="Search"
                       type="search"
                       value={tableQuery}
                     />
                   </div>
-                  <Button className="h-8 rounded-sm px-2 text-xs" size="sm" type="button" variant="outline">
+                  <Button
+                    className="h-8 rounded-sm border border-toolbar-field-border bg-toolbar-field px-2 text-xs text-foreground hover:bg-toolbar-field/90"
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
                     <Filter className="size-3.5" />
                     Filter
                   </Button>
                 </div>
               </div>
 
-              <div className="mt-3 overflow-x-auto rounded-sm border border-border/50">
+              <div className="mt-3 overflow-x-auto rounded-sm border border-page-panel-border-muted">
                 <table className="w-full min-w-[480px] text-left text-sm">
-                  <thead className="border-b border-border/50 bg-muted/30 text-caption text-muted-foreground">
+                  <thead className="border-b border-page-panel-border-muted bg-toolbar-field/50 text-caption text-muted-foreground">
                     <tr>
                       <th className="px-3 py-2 font-medium">Task name</th>
                       <th className="px-3 py-2 font-medium">Project</th>
@@ -310,7 +322,7 @@ export function DashboardPage() {
                       </tr>
                     ) : (
                       filteredTable.map((task) => (
-                        <tr className="border-b border-border/30 last:border-0" key={task.id}>
+                        <tr className="border-b border-page-panel-border-subtle last:border-0" key={task.id}>
                           <td className="px-3 py-2">
                             <span className="inline-flex items-center gap-2 font-medium text-foreground">
                               <FileText className="size-3.5 shrink-0 text-muted-foreground" />
@@ -339,7 +351,7 @@ export function DashboardPage() {
               </div>
             </section>
 
-            <section className="flex flex-col rounded-sm border border-border/60 bg-white p-4 dark:bg-zinc-950/50">
+            <section className="flex flex-col rounded-sm border border-page-panel-border bg-page-panel p-4">
               <h2 className="text-sm font-semibold">Performance</h2>
               <p className="mt-0.5 text-caption text-muted-foreground">Completion across all projects</p>
               <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight">{completionPct}%</p>
@@ -354,8 +366,8 @@ export function DashboardPage() {
                       <div className="flex flex-1 flex-col items-center gap-1" key={i}>
                         <div
                           className={cn(
-                            "w-full max-w-8 rounded-t-sm bg-linear-to-t from-teal-800/90 to-teal-500/80 dark:from-teal-600 dark:to-teal-400",
-                            i === 2 && "ring-1 ring-teal-400/60 dark:ring-teal-500/50"
+                            "w-full max-w-8 rounded-t-sm bg-linear-to-t from-brand-chart-deep/90 to-brand-chart-mid/80",
+                            i === 2 && "ring-1 ring-brand-emphasis/55"
                           )}
                           style={{ height: `${24 + pct * 0.72}%`, minHeight: "20px" }}
                           title={`${h} tasks`}

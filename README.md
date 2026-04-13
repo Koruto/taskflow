@@ -1,23 +1,17 @@
 # Taskflow (frontend)
 
-React + TypeScript + Vite + Tailwind + shadcn/ui. This repo includes a **local mock API** so you can develop the UI without the Go backend.
+React + TypeScript + Vite + Tailwind + shadcn/ui. In **development**, the app uses **[Mock Service Worker](https://mswjs.io/)** in the browser to emulate the Appendix A–style API (same default origin as before: `http://localhost:4000`). Persisted mock data lives in **localStorage** under the key `taskflow.mock.db`.
 
 ## Run locally
 
-**Terminal 1 — mock API (Appendix A–style, port 4000)**
-
 ```bash
 npm install
-npm run mock
-```
-
-**Terminal 2 — Vite**
-
-```bash
 npm run dev
 ```
 
-Optional: copy `.env.example` to `.env` and set `VITE_API_BASE_URL` if the API is not on `http://localhost:4000`.
+No separate mock server process is required. Open the app, use DevTools **Network** to see `fetch` calls to your configured API base URL.
+
+Optional: copy `.env.example` to `.env` and set `VITE_API_BASE_URL` if you point the client at a real backend instead of the default mock origin.
 
 ## Test credentials (mock)
 
@@ -31,15 +25,14 @@ The login screen also has **Login as demo user** for one-click access.
 ## Project layout
 
 - `src/` — React app
-- `mock/server.mjs` — Express mock server implementing auth, projects, tasks, and `GET /users` for assignee pickers
+- `src/lib/api/msw/` — MSW handlers and localStorage-backed mock store (`mockServiceWorker.js` is served from `public/`)
 
 ## Scripts
 
-| Command       | Purpose              |
-| ------------- | -------------------- |
-| `npm run dev` | Vite dev server      |
-| `npm run mock`| Mock API on :4000    |
-| `npm run build` | Production build   |
+| Command         | Purpose              |
+| --------------- | -------------------- |
+| `npm run dev`   | Vite dev server + MSW mock API in the browser |
+| `npm run build` | Production build     |
 
 ---
 
@@ -49,8 +42,8 @@ The original Vite template ESLint expansion notes are below (kept for reference)
 
 Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs).
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs)
 
 ### React Compiler
 
@@ -74,7 +67,7 @@ export default defineConfig([
       tseslint.configs.recommendedTypeChecked,
       // Alternatively, use this for stricter rules
       tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
+      // Optionally, add this for stylisitic rules
       tseslint.configs.stylisticTypeChecked,
 
       // Other configs...
@@ -90,7 +83,7 @@ export default defineConfig([
 ])
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+You can also add [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js

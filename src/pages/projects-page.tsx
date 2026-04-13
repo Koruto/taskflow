@@ -74,16 +74,13 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-1 py-1">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-3 px-1 py-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
-          <p className="mt-1 text-body text-muted-foreground">
-            Organize work into projects. Open one to manage tasks on a board.
-          </p>
+          <h1 className="text-base font-medium text-foreground">Manage your projects here.</h1>
         </div>
         <Button
-          className="gap-2 rounded-sm bg-teal-700 text-white hover:bg-teal-800"
+          className="gap-2 rounded-sm bg-brand text-brand-foreground hover:bg-brand-hover"
           onClick={() => setDialogOpen(true)}
           type="button"
         >
@@ -112,7 +109,7 @@ export function ProjectsPage() {
                 Name
                 <input
                   autoFocus
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-body outline-none ring-ring/40 focus-visible:ring-2"
+                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setName(event.target.value)}
                   placeholder="e.g. Website redesign"
                   value={name}
@@ -121,7 +118,7 @@ export function ProjectsPage() {
               <label className="text-body">
                 Description
                 <textarea
-                  className="mt-1 min-h-[88px] w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-body outline-none ring-ring/40 focus-visible:ring-2"
+                  className="focus-ring-accent mt-1 min-h-[88px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="Optional context for your team"
                   rows={3}
@@ -138,7 +135,11 @@ export function ProjectsPage() {
               >
                 Cancel
               </Button>
-              <Button disabled={isCreating} type="submit">
+              <Button
+                className="bg-brand text-brand-foreground hover:bg-brand-hover"
+                disabled={isCreating}
+                type="submit"
+              >
                 {isCreating ? "Creating…" : "Create project"}
               </Button>
             </DialogFooter>
@@ -149,14 +150,14 @@ export function ProjectsPage() {
       {errorMessage && !dialogOpen && <p className="text-caption text-destructive">{errorMessage}</p>}
       {isLoading && <p className="text-body text-muted-foreground">Loading projects…</p>}
       {!isLoading && projects.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed bg-muted/30 px-6 py-14 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed border-page-panel-border bg-muted/30 px-6 py-14 text-center">
           <FolderKanban className="size-10 text-muted-foreground" />
           <div>
             <p className="text-body font-medium">No projects yet</p>
             <p className="mt-1 text-caption text-muted-foreground">Create your first project to get started.</p>
           </div>
           <Button
-            className="gap-2 rounded-sm bg-teal-700 text-white hover:bg-teal-800"
+            className="gap-2 rounded-sm bg-brand text-brand-foreground hover:bg-brand-hover"
             onClick={() => setDialogOpen(true)}
             type="button"
           >
@@ -167,21 +168,23 @@ export function ProjectsPage() {
       )}
 
       {projects.length > 0 && (
-        <ul className="grid gap-3">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => (
-            <li key={project.id}>
+            <li className="min-h-0" key={project.id}>
               <Link
                 className={cn(
-                  "block rounded-sm border bg-card p-4 shadow-sm transition-colors",
-                  "hover:border-primary/30 hover:bg-muted/40"
+                  "flex h-full min-h-[7.5rem] flex-col rounded-sm border border-page-panel-border bg-page-panel p-4 transition-colors",
+                  "hover:border-accent/35 hover:bg-muted/30"
                 )}
                 to={`/projects/${project.id}`}
               >
-                <p className="text-body font-medium">{project.name}</p>
-                {project.description ? (
-                  <p className="mt-1 text-caption text-muted-foreground line-clamp-2">{project.description}</p>
+                <p className="text-base font-medium text-foreground">
+                  {project.name.trim() ? project.name : "Untitled project"}
+                </p>
+                {project.description != null && project.description.trim() !== "" ? (
+                  <p className="mt-1 flex-1 text-sm text-muted-foreground line-clamp-4">{project.description.trim()}</p>
                 ) : (
-                  <p className="mt-1 text-caption text-muted-foreground">No description</p>
+                  <p className="mt-1 flex-1 text-sm text-muted-foreground">No description</p>
                 )}
               </Link>
             </li>
