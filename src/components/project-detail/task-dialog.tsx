@@ -1,15 +1,24 @@
-import { type FormEvent } from "react"
+import { type FormEvent, useState } from "react"
+import { format } from "date-fns/format"
+import { parseISO } from "date-fns/parseISO"
 
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
+import { priorityLabel, priorityPillClassName } from "@/lib/project-task-utils"
+import { dialogFormControlClass, dialogFormLabelClass } from "@/lib/dialog-form-classes"
+import { cn } from "@/lib/utils"
 import type { AuthUser, TaskPriority, TaskStatus } from "@/types"
+import { CalendarDays } from "lucide-react"
 
 type TaskDialogProps = {
   open: boolean
@@ -32,6 +41,8 @@ type TaskDialogProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 
+const PRIORITIES: TaskPriority[] = ["low", "medium", "high"]
+
 export function TaskDialog({
   open,
   onOpenChange,
@@ -52,90 +63,141 @@ export function TaskDialog({
   isSaving,
   onSubmit,
 }: TaskDialogProps) {
+  const [duePopoverOpen, setDuePopoverOpen] = useState(false)
+
+  const selectedDue = dueDate ? parseISO(`${dueDate}T12:00:00`) : undefined
+
   return (
-    <Dialog
-      onOpenChange={onOpenChange}
-      open={open}
-    >
-      <DialogContent className="sm:max-w-md [&_input]:rounded-sm [&_select]:rounded-sm [&_textarea]:rounded-sm">
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle>{editingTaskId ? "Edit task" : "New task"}</DialogTitle>
-            <DialogDescription>
-              {editingTaskId ? "Update details for this task." : "Add a task to this project."}
-            </DialogDescription>
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="gap-0 p-0 sm:max-w-lg [&_button]:text-[0.8rem]">
+        <form className="grid" onSubmit={onSubmit}>
+          <DialogHeader className="border-b border-border/60 px-4 py-3 pr-12">
+            <DialogTitle className="font-heading text-base font-medium leading-none">
+              {editingTaskId ? "Edit task" : "Create task"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <label className="text-body">
-              Title
+
+          <div className="grid gap-3 px-4 py-3">
+            <div className="grid gap-1">
+              <label className={dialogFormLabelClass} htmlFor="task-title">
+                Title
+              </label>
               <input
-                className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
+                className={cn(dialogFormControlClass, "h-9 w-full")}
+                id="task-title"
                 onChange={(event) => onTitleChange(event.target.value)}
                 value={title}
               />
-            </label>
-            <label className="text-body">
-              Description
+            </div>
+
+            <div className="grid gap-1">
+              <label className={dialogFormLabelClass} htmlFor="task-desc">
+                Description
+              </label>
               <textarea
-                className="focus-ring-accent mt-1 min-h-[80px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
+                className={cn(dialogFormControlClass, "min-h-[72px] w-full resize-y")}
+                id="task-desc"
                 onChange={(event) => onDescriptionChange(event.target.value)}
                 rows={3}
                 value={description}
               />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-body">
-                Status
-                <select
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => onTaskStatusChange(event.target.value as TaskStatus)}
-                  value={taskStatus}
-                >
-                  <option value="todo">Not started</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="in_review">In review</option>
-                  <option value="done">Completed</option>
-                </select>
-              </label>
-              <label className="text-body">
-                Priority
-                <select
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                  onChange={(event) => onPriorityChange(event.target.value as TaskPriority)}
-                  value={priority}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Normal</option>
-                  <option value="high">Urgent</option>
-                </select>
-              </label>
             </div>
-            <label className="text-body">
-              Assignee
-              <select
-                className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                onChange={(event) => onAssigneeIdChange(event.target.value)}
-                value={assigneeId}
-              >
-                <option value="">Unassigned</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
+
+            <div className="grid gap-2 sm:grid-cols-2 sm:gap-2">
+              <div className="grid min-w-0 gap-1">
+                <span className={dialogFormLabelClass}>Status</span>
+                <Select onValueChange={(v) => onTaskStatusChange(v as TaskStatus)} value={taskStatus}>
+                  <SelectTrigger
+                    className="h-9 w-full !min-w-0 border-border bg-background"
+                    variant="field"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TASK_STATUS_COLUMNS.map((column) => (
+                      <SelectItem key={column.id} value={column.id}>
+                        {column.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid min-w-0 gap-1">
+                <span className={dialogFormLabelClass}>Assignee</span>
+                <Select
+                  onValueChange={(v) => onAssigneeIdChange(v === "none" ? "" : v)}
+                  value={assigneeId || "none"}
+                >
+                  <SelectTrigger
+                    className="h-9 w-full !min-w-0 border-border bg-background"
+                    variant="field"
+                  >
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid min-w-0 gap-1">
+              <span className={dialogFormLabelClass}>Priority</span>
+              <div className="flex min-h-9 gap-1 rounded-sm border border-toolbar-field-border bg-toolbar-field p-1">
+                {PRIORITIES.map((p) => (
+                  <button
+                    className={cn(
+                      "min-w-0 flex-1 cursor-pointer rounded-[min(var(--radius-md),12px)] px-1.5 py-1 text-center text-[0.8rem] font-medium transition-colors",
+                      priority === p
+                        ? cn(priorityPillClassName(p), "shadow-sm")
+                        : "border border-transparent bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    )}
+                    key={p}
+                    onClick={() => onPriorityChange(p)}
+                    type="button"
+                  >
+                    {priorityLabel(p)}
+                  </button>
                 ))}
-              </select>
-            </label>
-            <label className="text-body">
-              Due date
-              <input
-                className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
-                onChange={(event) => onDueDateChange(event.target.value)}
-                type="date"
-                value={dueDate}
-              />
-            </label>
+              </div>
+            </div>
+
+            <div className="grid gap-1">
+              <span className={dialogFormLabelClass}>Due date</span>
+              <Popover onOpenChange={setDuePopoverOpen} open={duePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    className={cn(
+                      "h-9 w-full justify-start gap-2 border-border bg-background px-2.5 font-normal text-[0.8rem] hover:bg-muted/60"
+                    )}
+                    type="button"
+                    variant="outline"
+                  >
+                    <CalendarDays className="size-4 shrink-0 opacity-70" />
+                    {dueDate && selectedDue ? format(selectedDue, "MMM d, yyyy") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    onSelect={(date) => {
+                      onDueDateChange(date ? format(date, "yyyy-MM-dd") : "")
+                      setDuePopoverOpen(false)
+                    }}
+                    selected={selectedDue}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <DialogFooter className="gap-2 sm:justify-end">
+
+          <DialogFooter className="mx-0 mb-0 gap-2 rounded-none border-border/60 bg-muted/30 px-4 py-3 sm:justify-end">
             <Button
               onClick={() => {
                 onOpenChange(false)

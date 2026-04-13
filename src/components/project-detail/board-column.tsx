@@ -15,6 +15,8 @@ type BoardColumnProps = {
   columnTasksCount: number
   columnDotClass: string
   columnSurfaceClass: string
+  columnHeaderTextClass: string
+  columnCountBadgeClass: string
   columnTaskIds: Record<TaskStatus, string[]>
   taskIds: string[]
   taskById: Map<string, Task>
@@ -41,10 +43,10 @@ function BoardEmptyDropZone({
   return (
     <div
       className={cn(
-        "flex min-h-[120px] flex-1 flex-col items-center justify-center rounded-sm border border-solid px-2 py-6 text-center transition-[box-shadow,background-color,border-color]",
+        "flex min-h-[120px] flex-1 flex-col items-center justify-center rounded-sm px-2 py-6 text-center transition-[box-shadow,background-color]",
         showActiveDrop
-          ? "border-primary/55 bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary)/0.35)]"
-          : "border-border/40 bg-background/30"
+          ? "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary)/0.35)]"
+          : "bg-background/25"
       )}
       ref={setNodeRef}
     >
@@ -59,6 +61,8 @@ export function BoardColumn({
   columnTasksCount,
   columnDotClass,
   columnSurfaceClass,
+  columnHeaderTextClass,
+  columnCountBadgeClass,
   columnTaskIds,
   taskIds,
   taskById,
@@ -73,15 +77,24 @@ export function BoardColumn({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 min-w-0 flex-1 flex-col rounded-sm border border-border/35 p-2 transition-colors",
+        "flex h-full min-h-0 min-w-0 flex-1 flex-col rounded-sm border border-border p-2 transition-colors",
         columnSurfaceClass
       )}
     >
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-0.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <span className={cn("size-1.5 shrink-0 rounded-full", columnDotClass)} />
-          <h2 className="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">{columnLabel}</h2>
-          <span className="tabular-nums text-[11px] text-muted-foreground">({columnTasksCount})</span>
+          <h2 className={cn("truncate text-xs font-semibold uppercase tracking-wide", columnHeaderTextClass)}>
+            {columnLabel}
+          </h2>
+          <span
+            className={cn(
+              "inline-flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+              columnCountBadgeClass
+            )}
+          >
+            {columnTasksCount}
+          </span>
         </div>
         <Button
           aria-label={`Add task to ${columnLabel}`}
@@ -98,7 +111,7 @@ export function BoardColumn({
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm transition-[box-shadow,background-color]",
+          "flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden rounded-sm transition-[box-shadow,background-color]",
           isDragActive && columnDropTarget && "bg-primary/8 shadow-[inset_0_0_0_2px_hsl(var(--primary)/0.45)]"
         )}
       >
@@ -110,7 +123,7 @@ export function BoardColumn({
           />
         ) : (
           <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-            <div className="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden pr-0.5 *:mb-2 *:last:mb-0">
+            <div className="tf-scrollbar-minimal flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-y-auto overflow-x-hidden overscroll-contain pr-1 *:mb-2 *:last:mb-0">
               {taskIds.map((id) => {
                 const task = taskById.get(id)
                 if (!task) {

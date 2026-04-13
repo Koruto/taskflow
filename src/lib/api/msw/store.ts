@@ -84,6 +84,7 @@ function seedDemo(): MockDb {
 
   const dueOn = (offsetFromToday: number) => isoLocalDate(addDays(today, offsetFromToday))
 
+  /** `status`: todo | in_progress | in_review | done — `priority`: low | medium | high */
   const weekTaskSpecs: {
     title: string
     description: string

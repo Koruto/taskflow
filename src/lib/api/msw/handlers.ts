@@ -59,6 +59,7 @@ function authUser(db: MockDb, request: Request): MockUser | null {
 }
 
 const allowedStatuses = new Set(["todo", "in_progress", "in_review", "done"])
+const allowedPriorities = new Set(["low", "medium", "high"])
 
 export const handlers = [
   http.get(apiUrl("/health"), () => HttpResponse.json({ ok: true })),
@@ -286,8 +287,11 @@ export const handlers = [
     }
     const description =
       typeof body.description === "string" ? body.description : ""
-    const priority =
+    let priority =
       typeof body.priority === "string" && body.priority ? body.priority : "medium"
+    if (!allowedPriorities.has(priority)) {
+      priority = "medium"
+    }
     const assignee_id =
       body.assignee_id === "" || body.assignee_id === undefined
         ? null
@@ -354,6 +358,17 @@ export const handlers = [
             {
               error: "validation failed",
               fields: { status: "invalid status" },
+            },
+            { status: 400 }
+          )
+        }
+      }
+      if (key === "priority" && typeof value === "string") {
+        if (!allowedPriorities.has(value)) {
+          return HttpResponse.json(
+            {
+              error: "validation failed",
+              fields: { priority: "invalid priority" },
             },
             { status: 400 }
           )

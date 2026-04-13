@@ -25,11 +25,39 @@ export function initialsForUser(users: AuthUser[], userId: string | null): strin
 
 export function priorityLabel(priority: TaskPriority): string {
   switch (priority) {
-    case "high":
-      return "Urgent"
-    case "medium":
-      return "Normal"
     case "low":
       return "Low"
+    case "medium":
+      return "Medium"
+    case "high":
+      return "High"
+    default: {
+      const _exhaustive: never = priority
+      return _exhaustive
+    }
   }
+}
+
+/** Tailwind classes for priority pills on task cards (light + dark). */
+export function priorityPillClassName(priority: TaskPriority): string {
+  switch (priority) {
+    case "low":
+      return "border border-slate-300/80 bg-slate-100 text-slate-800 dark:border-slate-600/80 dark:bg-slate-800/90 dark:text-slate-100"
+    case "medium":
+      return "border border-sky-400/55 bg-sky-100 text-sky-950 dark:border-sky-600/60 dark:bg-sky-950/55 dark:text-sky-50"
+    case "high":
+      return "border border-rose-400/60 bg-rose-100 text-rose-950 dark:border-rose-700/70 dark:bg-rose-950/55 dark:text-rose-50"
+    default: {
+      const _exhaustive: never = priority
+      return _exhaustive
+    }
+  }
+}
+
+export function assigneeName(users: AuthUser[], assigneeId: string | null): string | null {
+  if (!assigneeId) {
+    return null
+  }
+  const user = users.find((entry) => entry.id === assigneeId)
+  return user?.name ?? null
 }

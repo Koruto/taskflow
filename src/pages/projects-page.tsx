@@ -2,15 +2,9 @@ import { type FormEvent, useEffect, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ApiError } from "@/lib/api/client"
+import { dialogFormControlClass, dialogFormLabelClass } from "@/lib/dialog-form-classes"
 import { createProject, listProjects } from "@/lib/api/taskflow"
 import { cn } from "@/lib/utils"
 import type { Project } from "@/types"
@@ -98,36 +92,46 @@ export function ProjectsPage() {
         }}
         open={dialogOpen}
       >
-        <DialogContent className="sm:max-w-md">
-          <form className="grid gap-4" onSubmit={handleCreateProject}>
-            <DialogHeader>
-              <DialogTitle>Create project</DialogTitle>
-              <DialogDescription>Name your project and add an optional short description.</DialogDescription>
+        <DialogContent className="gap-0 p-0 sm:max-w-lg [&_button]:text-[0.8rem]">
+          <form className="grid" onSubmit={handleCreateProject}>
+            <DialogHeader className="border-b border-border/60 px-4 py-3 pr-12">
+              <DialogTitle className="font-heading text-base font-medium leading-none">Create project</DialogTitle>
+              <p className="mt-1 text-[0.8rem] text-muted-foreground">
+                Name your project and add an optional short description.
+              </p>
             </DialogHeader>
-            <div className="grid gap-3">
-              <label className="text-body">
-                Name
+
+            <div className="grid gap-3 px-4 py-3">
+              <div className="grid gap-1">
+                <label className={dialogFormLabelClass} htmlFor="create-project-name">
+                  Name
+                </label>
                 <input
                   autoFocus
-                  className="focus-ring-accent mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-body"
+                  className={cn(dialogFormControlClass, "h-9 w-full")}
+                  id="create-project-name"
                   onChange={(event) => setName(event.target.value)}
                   placeholder="e.g. Website redesign"
                   value={name}
                 />
-              </label>
-              <label className="text-body">
-                Description
+              </div>
+              <div className="grid gap-1">
+                <label className={dialogFormLabelClass} htmlFor="create-project-desc">
+                  Description
+                </label>
                 <textarea
-                  className="focus-ring-accent mt-1 min-h-[88px] w-full resize-y rounded-sm border border-border bg-background px-3 py-2 text-body"
+                  className={cn(dialogFormControlClass, "min-h-[72px] w-full resize-y")}
+                  id="create-project-desc"
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="Optional context for your team"
                   rows={3}
                   value={description}
                 />
-              </label>
+              </div>
               {errorMessage && <p className="text-caption text-destructive">{errorMessage}</p>}
             </div>
-            <DialogFooter className="gap-2 sm:justify-end">
+
+            <DialogFooter className="mx-0 mb-0 gap-2 rounded-none border-border/60 bg-muted/30 px-4 py-3 sm:justify-end">
               <Button
                 onClick={() => setDialogOpen(false)}
                 type="button"

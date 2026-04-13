@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 
-import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { ApiError } from "@/lib/api/client"
 import { getProject, listProjects } from "@/lib/api/taskflow"
+import { priorityLabel } from "@/lib/project-task-utils"
 import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import { cn } from "@/lib/utils"
-import type { Project, Task, TaskPriority, TaskStatus } from "@/types"
-import { FileText, Filter, Folder, Search } from "lucide-react"
+import type { Project, Task, TaskStatus } from "@/types"
+import { FileText, Folder, Search } from "lucide-react"
 
 type TaskRow = Task & { project_name: string }
 
@@ -54,17 +54,6 @@ function endOfCalendarWeekIso(todayIso: string): string {
 
 function taskStatusLabel(status: TaskStatus): string {
   return TASK_STATUS_COLUMNS.find((c) => c.id === status)?.label ?? status
-}
-
-function priorityLabel(priority: TaskPriority): string {
-  switch (priority) {
-    case "high":
-      return "Urgent"
-    case "medium":
-      return "Normal"
-    case "low":
-      return "Low"
-  }
 }
 
 const PROJECT_CHIP_STYLES = [
@@ -247,39 +236,28 @@ export function DashboardPage() {
             </div>
 
             <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <p className="text-sm font-medium text-muted-foreground">In reviews</p>
+              <p className="text-sm font-medium text-muted-foreground">In review</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.inReview}</p>
             </div>
 
             <div className="rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <p className="text-sm font-medium text-muted-foreground">Completed tasks</p>
+              <p className="text-sm font-medium text-muted-foreground">Done tasks</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{counts.done}</p>
             </div>
           </div>
 
           <section className="flex min-h-0 flex-1 flex-col gap-3 rounded-sm border border-page-panel-border bg-page-panel p-4">
-              <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:justify-between sm:gap-4">
                 <h2 className="text-sm font-semibold">This week&apos;s tasks</h2>
-                <div className="flex flex-1 flex-wrap items-center gap-2 sm:max-w-md sm:justify-end">
-                  <div className="relative min-w-40 flex-1">
-                    <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-[0.9375rem]"
-                      onChange={(event) => setTableQuery(event.target.value)}
-                      placeholder="Search"
-                      type="search"
-                      value={tableQuery}
-                    />
-                  </div>
-                  <Button
-                    className="h-8 rounded-sm border border-toolbar-field-border bg-toolbar-field px-2 text-xs text-foreground hover:bg-toolbar-field/90"
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Filter className="size-3.5" />
-                    Filter
-                  </Button>
+                <div className="relative w-full sm:max-w-md">
+                  <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    className="focus-ring-accent h-8 w-full rounded-sm border border-toolbar-field-border bg-toolbar-field py-1 pl-8 pr-2 text-[0.9375rem]"
+                    onChange={(event) => setTableQuery(event.target.value)}
+                    placeholder="Search"
+                    type="search"
+                    value={tableQuery}
+                  />
                 </div>
               </div>
 

@@ -28,7 +28,7 @@ export function ProjectTaskList({ tasks, onStatusChange, onEditTask }: ProjectTa
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-snug">{task.title}</p>
               {task.description ? (
-                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{task.description}</p>
+                <p className="mt-0.5 line-clamp-2 break-words text-xs text-muted-foreground">{task.description}</p>
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0 sm:justify-end">
@@ -39,10 +39,10 @@ export function ProjectTaskList({ tasks, onStatusChange, onEditTask }: ProjectTa
                 onChange={(event) => onStatusChange(task.id, event.target.value as TaskStatus)}
                 value={task.status}
               >
-                <option value="todo">Not started</option>
+                <option value="todo">Todo</option>
                 <option value="in_progress">In progress</option>
                 <option value="in_review">In review</option>
-                <option value="done">Completed</option>
+                <option value="done">Done</option>
               </select>
               <Button className="h-7 px-2 text-xs" onClick={() => onEditTask(task)} size="sm" type="button" variant="outline">
                 Edit

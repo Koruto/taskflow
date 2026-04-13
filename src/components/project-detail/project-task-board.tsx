@@ -87,14 +87,16 @@ export function ProjectTaskBoard({
       onDragStart={handleDragStart}
       sensors={sensors}
     >
-      <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col">
-        <div className="grid h-full min-h-0 w-full min-w-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+        <div className="grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-[minmax(0,1fr)] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {TASK_STATUS_COLUMNS.map((column) => {
             const ids = columnTaskIds[column.id]
             return (
-              <div className="flex h-full min-h-0 min-w-0 flex-col" key={column.id}>
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col" key={column.id}>
                 <BoardColumn
+                  columnCountBadgeClass={column.countBadgeClass}
                   columnDotClass={column.dotClass}
+                  columnHeaderTextClass={column.headerTextClass}
                   columnId={column.id}
                   columnLabel={column.label}
                   columnSurfaceClass={column.surfaceClass}
