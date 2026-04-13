@@ -1,5 +1,7 @@
 import { createBrowserRouter } from "react-router-dom"
 
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { AppShell } from "@/components/layout/app-shell"
 import { LandingPage } from "@/pages/landing-page"
 import { LoginPage } from "@/pages/login-page"
 import { NotFoundPage } from "@/pages/not-found-page"
@@ -11,7 +13,17 @@ export const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
-  { path: "/projects", element: <ProjectsPage /> },
-  { path: "/projects/:projectId", element: <ProjectDetailPage /> },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <AppShell />,
+        children: [
+          { path: "/projects", element: <ProjectsPage /> },
+          { path: "/projects/:projectId", element: <ProjectDetailPage /> },
+        ],
+      },
+    ],
+  },
   { path: "*", element: <NotFoundPage /> },
 ])
