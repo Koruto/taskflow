@@ -317,6 +317,10 @@
     @apply outline-none ring-accent/25 focus-visible:ring-2;
   }
 
+  .project-accent-strip {
+    @apply bg-linear-to-b from-brand/65 to-brand/20 dark:from-brand/55 dark:to-brand/30;
+  }
+
   /**
    * Shared marketing/auth backdrop (landing, login, register).
    * Layers: base surface + radial brand glow + soft bottom vignette.

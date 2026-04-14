@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { ApiError } from "@/lib/api/client"
 import { getProject, listProjects } from "@/lib/api/taskflow"
 import { priorityLabel, priorityPillClassName, taskStatusLabel } from "@/lib/project-task-utils"
-import { projectAccentStripClass } from "@/lib/project-accent"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -361,7 +360,7 @@ export function DashboardPage() {
                     >
                       <div
                         aria-hidden
-                        className={cn("w-[3px] shrink-0", projectAccentStripClass(project.id))}
+                        className="project-accent-strip w-[3px] shrink-0"
                       />
                       <div className="min-w-0 flex-1 px-3 py-2.5">
                         <p className="text-sm font-semibold leading-snug text-foreground">

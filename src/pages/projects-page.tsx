@@ -9,7 +9,6 @@ import { ProjectEditDialog } from "@/components/project-detail/project-edit-dial
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiError } from "@/lib/api/client"
 import { createProject, listProjects, updateProject } from "@/lib/api/taskflow"
-import { projectAccentStripClass } from "@/lib/project-accent"
 import { cn } from "@/lib/utils"
 import type { Project } from "@/types"
 import { FolderKanban, Pencil, Plus, RefreshCcw } from "lucide-react"
@@ -274,7 +273,7 @@ export function ProjectsPage() {
               >
                 <div
                   aria-hidden
-                  className={cn("w-0.5 shrink-0 sm:w-[3px]", projectAccentStripClass(project.id))}
+                  className="project-accent-strip w-0.5 shrink-0 sm:w-[3px]"
                 />
                 <Link
                   className="flex min-h-30 min-w-0 flex-1 flex-col p-4 pr-2 transition-colors hover:bg-transparent"
