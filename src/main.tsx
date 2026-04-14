@@ -6,10 +6,8 @@ import "./index.css"
 import App from "./App.tsx"
 
 async function bootstrap() {
-  if (import.meta.env.DEV) {
-    const { startMockApi } = await import("@/lib/api/msw/bootstrap")
-    await startMockApi()
-  }
+  const { startMockApi } = await import("@/lib/api/msw/bootstrap")
+  await startMockApi()
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

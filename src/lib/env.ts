@@ -10,7 +10,7 @@ function readEnv(): z.infer<typeof envSchema> {
     VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
   })
   if (!parsed.success) {
-    console.error("Invalid environment variables:", parsed.error.flatten())
+    console.error("Invalid environment variables!")
     throw new Error("Invalid VITE_API_BASE_URL. Use a full URL (e.g. http://localhost:4000).")
   }
   return parsed.data
