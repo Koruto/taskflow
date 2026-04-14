@@ -1,6 +1,6 @@
 <div align="center">
 
-<svg xmlns="http://www.w3.org/2000/svg" width="72" height="69" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill-opacity:1"/></svg>
+<img src="public/favicon.svg" width="72" height="72" alt="Taskflow logo" />
 
 # Taskflow
 
@@ -58,7 +58,6 @@ Board column drops commit to the UI immediately (full task-array snapshot swap),
 - **Project / task delete UI** — the API endpoints exist in MSW but there are no delete buttons in the UI. Given time I'd add a context menu or a delete confirmation dialog.
 - **Pagination** — all list endpoints return everything. With many tasks the dashboard table would become unwieldy.
 - **WebSocket / SSE real-time** — not possible without a real backend.
-- **Optimistic create/edit** — the dialog waits for the API. An optimistic approach would feel snappier but complicates error handling.
 
 ---
 
@@ -148,6 +147,8 @@ The flip side is that this approach produced something that genuinely looks and 
 **Project and task delete.** The MSW endpoints are fully wired (`DELETE /projects/:id` and `DELETE /tasks/:id` both work correctly), but I never added the UI trigger. A simple confirmation dialog or a context menu on the card would close this gap.
 
 **Design consistency.** Audit and replace all hardcoded colour and spacing values with the right tokens, enforce the type scale properly, and make sure the same component patterns are used in equivalent situations across the app.
+
+**Code review and cleanup.** The codebase needs a proper pass, renaming files and functions to be more consistent, removing anything that's no longer used, and consolidating duplicated logic. This is the kind of thing that compounds quickly if left alone, the longer it sits, the more new code builds on top of the mess.
 
 ### What I'd add
 

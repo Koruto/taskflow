@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
+import { addDays } from "date-fns/addDays"
+import { endOfWeek } from "date-fns/endOfWeek"
+import { format } from "date-fns/format"
+import { parseISO } from "date-fns/parseISO"
 
 import { useAuth } from "@/contexts/auth-context"
 import { ApiError } from "@/lib/api/client"
 import { getProject, listProjects } from "@/lib/api/taskflow"
-import { priorityLabel, priorityPillClassName } from "@/lib/project-task-utils"
+import { priorityLabel, priorityPillClassName, taskStatusLabel } from "@/lib/project-task-utils"
 import { projectAccentStripClass } from "@/lib/project-accent"
-import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -18,24 +21,6 @@ type TaskRow = Task & { project_name: string }
 const TASKS_TABLE_GRID =
   "grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)] gap-0"
 
-function todayIsoLocal(): string {
-  const n = new Date()
-  const y = n.getFullYear()
-  const m = String(n.getMonth() + 1).padStart(2, "0")
-  const d = String(n.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
-
-function addDaysIso(iso: string, days: number): string {
-  const [ys, ms, ds] = iso.split("-").map(Number)
-  const dt = new Date(ys!, ms! - 1, ds!)
-  dt.setDate(dt.getDate() + days)
-  const y = dt.getFullYear()
-  const m = String(dt.getMonth() + 1).padStart(2, "0")
-  const d = String(dt.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
-
 const PRIORITY_ORDER: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 }
 
 function compareIso(a: string, b: string): number {
@@ -46,19 +31,6 @@ function compareIso(a: string, b: string): number {
     return 1
   }
   return 0
-}
-
-/** Sunday of the calendar week containing `todayIso` (local). */
-function endOfCalendarWeekIso(todayIso: string): string {
-  const [ys, ms, ds] = todayIso.split("-").map(Number)
-  const dt = new Date(ys!, ms! - 1, ds!)
-  const dow = dt.getDay()
-  const daysToSunday = dow === 0 ? 0 : 7 - dow
-  return addDaysIso(todayIso, daysToSunday)
-}
-
-function taskStatusLabel(status: TaskStatus): string {
-  return TASK_STATUS_COLUMNS.find((c) => c.id === status)?.label ?? status
 }
 
 const PROJECT_CHIP_STYLES = [
@@ -78,11 +50,8 @@ function projectChipClass(projectId: string): string {
 }
 
 function formatDue(iso: string | null): string {
-  if (!iso) {
-    return "—"
-  }
-  const d = new Date(`${iso}T12:00:00`)
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+  if (!iso) return "—"
+  return format(parseISO(iso), "MMM d, yyyy")
 }
 
 export function DashboardPage() {
@@ -119,9 +88,12 @@ export function DashboardPage() {
     void load()
   }, [load])
 
-  const today = todayIsoLocal()
-  const weekEnd = addDaysIso(today, 7)
-  const calendarWeekEnd = useMemo(() => endOfCalendarWeekIso(today), [today])
+  const today = format(new Date(), "yyyy-MM-dd")
+  const weekEnd = format(addDays(new Date(), 7), "yyyy-MM-dd")
+  const calendarWeekEnd = useMemo(
+    () => format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    []
+  )
 
   const summary = useMemo(() => {
     let dueToday = 0
@@ -369,7 +341,6 @@ export function DashboardPage() {
             </div>
           </section>
 
-          {/* Projects list — mobile only */}
           <section className="flex flex-col gap-2 md:hidden">
             <h2 className="text-sm font-semibold">Your projects</h2>
             {projects.length === 0 ? (

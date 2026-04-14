@@ -34,7 +34,6 @@ export function findBoardContainer(
   return undefined
 }
 
-/** Board column order: Todo → In progress → In review → Done (matches `TASK_STATUS_COLUMNS`). */
 const STATUS_ORDER: TaskStatus[] = ["todo", "in_progress", "in_review", "done"]
 
 export function emptyColumnTaskIds(): Record<TaskStatus, string[]> {

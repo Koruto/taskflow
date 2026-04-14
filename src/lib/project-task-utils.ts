@@ -1,12 +1,12 @@
+import { format } from "date-fns/format"
+import { parseISO } from "date-fns/parseISO"
+
 import { TASK_STATUS_COLUMNS } from "@/lib/task-status-columns"
 import type { AuthUser, TaskPriority, TaskStatus } from "@/types"
 
 export function formatShortDate(iso: string | null): string {
-  if (!iso) {
-    return "—"
-  }
-  const d = new Date(`${iso}T12:00:00`)
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  if (!iso) return "—"
+  return format(parseISO(iso), "MMM d")
 }
 
 export function initialsForUser(users: AuthUser[], userId: string | null): string {

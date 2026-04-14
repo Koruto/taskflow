@@ -21,14 +21,6 @@ const LIST_ROW_GRID =
   "grid items-start grid-cols-[minmax(0,1.8fr)_minmax(0,3.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,2.2fr)]"
 
 export function ProjectTaskList({ tasks, users, onEditTask, onAddTask }: ProjectTaskListProps) {
-  if (tasks.length === 0) {
-    return (
-      <div className="rounded-sm border border-page-panel-border bg-page-panel px-4 py-10 text-center">
-        <p className="text-sm text-muted-foreground">No tasks match these filters.</p>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-3">
       {TASK_STATUS_COLUMNS.map((column) => {
