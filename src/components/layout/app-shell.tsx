@@ -9,7 +9,7 @@ import { FolderKanban, LayoutDashboard, Plus } from "lucide-react"
 
 const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+    "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-caption font-medium transition-colors",
     isActive ? "text-brand" : "text-muted-foreground"
   )
 
@@ -18,7 +18,7 @@ export function AppShell() {
   const matchProjectDetail = useMatch("/projects/:projectId")
 
   return (
-    <div className="flex min-h-svh w-full flex-col bg-zinc-100 dark:bg-zinc-950">
+    <div className="flex h-svh w-full flex-col bg-zinc-100 dark:bg-zinc-950">
       {/* Top bar */}
       <div className="flex shrink-0 border-b border-border bg-white dark:bg-zinc-950">
         {/* Desktop-only logo panel */}

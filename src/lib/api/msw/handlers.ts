@@ -12,6 +12,49 @@ import {
   toSafeUser,
 } from "./store"
 
+// ─── Dev flags ──────────────────────────────────────────────────────────────
+// Toggle either flag to simulate slow / broken task load endpoints (10 s delay).
+export const SIMULATE_TASKS_LOADING = false
+export const SIMULATE_TASKS_ERROR = false
+// Toggle to simulate an optimistic-update failure on PATCH /tasks/:id (2 s → 500).
+export const SIMULATE_TASK_UPDATE_ERROR = false
+// ────────────────────────────────────────────────────────────────────────────
+
+const TASK_DELAY_MS = 5_000
+const TASK_UPDATE_DELAY_MS = 2_000
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function withTaskSimulation(
+  run: () => Response | Promise<Response>
+): Promise<Response> {
+  if (SIMULATE_TASKS_LOADING || SIMULATE_TASKS_ERROR) {
+    await delay(TASK_DELAY_MS)
+  }
+  if (SIMULATE_TASKS_ERROR) {
+    return HttpResponse.json(
+      { error: "internal server error" },
+      { status: 500 }
+    )
+  }
+  return run()
+}
+
+async function withTaskUpdateSimulation(
+  run: () => Response | Promise<Response>
+): Promise<Response> {
+  if (SIMULATE_TASK_UPDATE_ERROR) {
+    await delay(TASK_UPDATE_DELAY_MS)
+    return HttpResponse.json(
+      { error: "internal server error" },
+      { status: 500 }
+    )
+  }
+  return run()
+}
+
 function apiUrl(path: string): string {
   const base = getApiBaseUrl().replace(/\/$/, "")
   const p = path.startsWith("/") ? path : `/${path}`
@@ -176,23 +219,25 @@ export const handlers = [
     return HttpResponse.json(project, { status: 201 })
   }),
 
-  http.get(apiUrl("/projects/:id"), ({ request, params }) => {
-    const db = loadDb()
-    const user = authUser(db, request)
-    if (!user) {
-      return unauthorized()
-    }
-    const id = String(params.id)
-    const project = db.projects.find((p) => p.id === id)
-    if (!project) {
-      return HttpResponse.json({ error: "not found" }, { status: 404 })
-    }
-    const projectTasks = db.tasks.filter((t) => t.project_id === project.id)
-    return HttpResponse.json({
-      ...project,
-      tasks: projectTasks,
+  http.get(apiUrl("/projects/:id"), async ({ request, params }) =>
+    withTaskSimulation(() => {
+      const db = loadDb()
+      const user = authUser(db, request)
+      if (!user) {
+        return unauthorized()
+      }
+      const id = String(params.id)
+      const project = db.projects.find((p) => p.id === id)
+      if (!project) {
+        return HttpResponse.json({ error: "not found" }, { status: 404 })
+      }
+      const projectTasks = db.tasks.filter((t) => t.project_id === project.id)
+      return HttpResponse.json({
+        ...project,
+        tasks: projectTasks,
+      })
     })
-  }),
+  ),
 
   http.patch(apiUrl("/projects/:id"), async ({ request, params }) => {
     const db = loadDb()
@@ -244,165 +289,173 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.get(apiUrl("/projects/:id/tasks"), ({ request, params }) => {
-    const db = loadDb()
-    const user = authUser(db, request)
-    if (!user) {
-      return unauthorized()
-    }
-    const id = String(params.id)
-    const project = db.projects.find((p) => p.id === id)
-    if (!project) {
-      return HttpResponse.json({ error: "not found" }, { status: 404 })
-    }
-    const url = new URL(request.url)
-    let filtered = db.tasks.filter((t) => t.project_id === project.id)
-    const statusFilter = url.searchParams.get("status")
-    if (statusFilter) {
-      filtered = filtered.filter((t) => t.status === statusFilter)
-    }
-    const assignee = url.searchParams.get("assignee")
-    if (assignee) {
-      filtered = filtered.filter((t) => t.assignee_id === assignee)
-    }
-    return HttpResponse.json({ tasks: filtered })
-  }),
-
-  http.post(apiUrl("/projects/:id/tasks"), async ({ request, params }) => {
-    const db = loadDb()
-    const user = authUser(db, request)
-    if (!user) {
-      return unauthorized()
-    }
-    const id = String(params.id)
-    const project = db.projects.find((p) => p.id === id)
-    if (!project) {
-      return HttpResponse.json({ error: "not found" }, { status: 404 })
-    }
-    const body = (await request.json()) as Record<string, unknown>
-    const title = body.title
-    const fields = validateRequired({ title })
-    if (Object.keys(fields).length > 0) {
-      return HttpResponse.json({ error: "validation failed", fields }, { status: 400 })
-    }
-    const description =
-      typeof body.description === "string" ? body.description : ""
-    let priority =
-      typeof body.priority === "string" && body.priority ? body.priority : "medium"
-    if (!allowedPriorities.has(priority)) {
-      priority = "medium"
-    }
-    const assignee_id =
-      body.assignee_id === "" || body.assignee_id === undefined
-        ? null
-        : (body.assignee_id as string | null)
-    const due_date =
-      body.due_date === null || body.due_date === undefined
-        ? null
-        : String(body.due_date)
-    const requestedStatus =
-      typeof body.status === "string" ? body.status : undefined
-    const status =
-      requestedStatus !== undefined && allowedStatuses.has(requestedStatus)
-        ? requestedStatus
-        : "todo"
-    const task: MockTask = {
-      id: crypto.randomUUID(),
-      title: String(title),
-      description: String(description),
-      status,
-      priority: String(priority),
-      project_id: project.id,
-      assignee_id: assignee_id === "" ? null : assignee_id,
-      due_date,
-      creator_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    db.tasks.push(task)
-    saveDb(db)
-    return HttpResponse.json(task, { status: 201 })
-  }),
-
-  http.patch(apiUrl("/tasks/:id"), async ({ request, params }) => {
-    const db = loadDb()
-    const user = authUser(db, request)
-    if (!user) {
-      return unauthorized()
-    }
-    const id = String(params.id)
-    const task = db.tasks.find((t) => t.id === id)
-    if (!task) {
-      return HttpResponse.json({ error: "not found" }, { status: 404 })
-    }
-    const body = (await request.json()) as Record<string, unknown>
-    const updatableKeys = [
-      "title",
-      "description",
-      "status",
-      "priority",
-      "assignee_id",
-      "due_date",
-    ] as const
-    for (const key of updatableKeys) {
-      if (!Object.prototype.hasOwnProperty.call(body, key)) {
-        continue
+  http.get(apiUrl("/projects/:id/tasks"), async ({ request, params }) =>
+    withTaskSimulation(() => {
+      const db = loadDb()
+      const user = authUser(db, request)
+      if (!user) {
+        return unauthorized()
       }
-      let value: unknown = body[key]
-      if (key === "assignee_id" && value === "") {
-        value = null
+      const id = String(params.id)
+      const project = db.projects.find((p) => p.id === id)
+      if (!project) {
+        return HttpResponse.json({ error: "not found" }, { status: 404 })
       }
-      if (key === "status" && typeof value === "string") {
-        if (!allowedStatuses.has(value)) {
-          return HttpResponse.json(
-            {
-              error: "validation failed",
-              fields: { status: "invalid status" },
-            },
-            { status: 400 }
-          )
+      const url = new URL(request.url)
+      let filtered = db.tasks.filter((t) => t.project_id === project.id)
+      const statusFilter = url.searchParams.get("status")
+      if (statusFilter) {
+        filtered = filtered.filter((t) => t.status === statusFilter)
+      }
+      const assignee = url.searchParams.get("assignee")
+      if (assignee) {
+        filtered = filtered.filter((t) => t.assignee_id === assignee)
+      }
+      return HttpResponse.json({ tasks: filtered })
+    })
+  ),
+
+  http.post(apiUrl("/projects/:id/tasks"), async ({ request, params }) =>
+    withTaskSimulation(async () => {
+      const db = loadDb()
+      const user = authUser(db, request)
+      if (!user) {
+        return unauthorized()
+      }
+      const id = String(params.id)
+      const project = db.projects.find((p) => p.id === id)
+      if (!project) {
+        return HttpResponse.json({ error: "not found" }, { status: 404 })
+      }
+      const body = (await request.json()) as Record<string, unknown>
+      const title = body.title
+      const fields = validateRequired({ title })
+      if (Object.keys(fields).length > 0) {
+        return HttpResponse.json({ error: "validation failed", fields }, { status: 400 })
+      }
+      const description =
+        typeof body.description === "string" ? body.description : ""
+      let priority =
+        typeof body.priority === "string" && body.priority ? body.priority : "medium"
+      if (!allowedPriorities.has(priority)) {
+        priority = "medium"
+      }
+      const assignee_id =
+        body.assignee_id === "" || body.assignee_id === undefined
+          ? null
+          : (body.assignee_id as string | null)
+      const due_date =
+        body.due_date === null || body.due_date === undefined
+          ? null
+          : String(body.due_date)
+      const requestedStatus =
+        typeof body.status === "string" ? body.status : undefined
+      const status =
+        requestedStatus !== undefined && allowedStatuses.has(requestedStatus)
+          ? requestedStatus
+          : "todo"
+      const task: MockTask = {
+        id: crypto.randomUUID(),
+        title: String(title),
+        description: String(description),
+        status,
+        priority: String(priority),
+        project_id: project.id,
+        assignee_id: assignee_id === "" ? null : assignee_id,
+        due_date,
+        creator_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      db.tasks.push(task)
+      saveDb(db)
+      return HttpResponse.json(task, { status: 201 })
+    })
+  ),
+
+  http.patch(apiUrl("/tasks/:id"), async ({ request, params }) =>
+    withTaskUpdateSimulation(async () => {
+      const db = loadDb()
+      const user = authUser(db, request)
+      if (!user) {
+        return unauthorized()
+      }
+      const id = String(params.id)
+      const task = db.tasks.find((t) => t.id === id)
+      if (!task) {
+        return HttpResponse.json({ error: "not found" }, { status: 404 })
+      }
+      const body = (await request.json()) as Record<string, unknown>
+      const updatableKeys = [
+        "title",
+        "description",
+        "status",
+        "priority",
+        "assignee_id",
+        "due_date",
+      ] as const
+      for (const key of updatableKeys) {
+        if (!Object.prototype.hasOwnProperty.call(body, key)) {
+          continue
         }
-      }
-      if (key === "priority" && typeof value === "string") {
-        if (!allowedPriorities.has(value)) {
-          return HttpResponse.json(
-            {
-              error: "validation failed",
-              fields: { priority: "invalid priority" },
-            },
-            { status: 400 }
-          )
+        let value: unknown = body[key]
+        if (key === "assignee_id" && value === "") {
+          value = null
         }
+        if (key === "status" && typeof value === "string") {
+          if (!allowedStatuses.has(value)) {
+            return HttpResponse.json(
+              {
+                error: "validation failed",
+                fields: { status: "invalid status" },
+              },
+              { status: 400 }
+            )
+          }
+        }
+        if (key === "priority" && typeof value === "string") {
+          if (!allowedPriorities.has(value)) {
+            return HttpResponse.json(
+              {
+                error: "validation failed",
+                fields: { priority: "invalid priority" },
+              },
+              { status: 400 }
+            )
+          }
+        }
+        ; (task as Record<string, unknown>)[key] = value
       }
-      ;(task as Record<string, unknown>)[key] = value
-    }
-    task.updated_at = new Date().toISOString()
-    saveDb(db)
-    return HttpResponse.json(task)
-  }),
+      task.updated_at = new Date().toISOString()
+      saveDb(db)
+      return HttpResponse.json(task)
+    })
+  ),
 
-  http.delete(apiUrl("/tasks/:id"), ({ request, params }) => {
-    const db = loadDb()
-    const user = authUser(db, request)
-    if (!user) {
-      return unauthorized()
-    }
-    const id = String(params.id)
-    const index = db.tasks.findIndex((t) => t.id === id)
-    if (index === -1) {
-      return HttpResponse.json({ error: "not found" }, { status: 404 })
-    }
-    const task = db.tasks[index]
-    const proj = db.projects.find((p) => p.id === task.project_id)
-    if (!proj) {
-      return HttpResponse.json({ error: "not found" }, { status: 404 })
-    }
-    const canDelete = task.creator_id === user.id || proj.owner_id === user.id
-    if (!canDelete) {
-      return HttpResponse.json({ error: "forbidden" }, { status: 403 })
-    }
-    db.tasks.splice(index, 1)
-    saveDb(db)
-    return new HttpResponse(null, { status: 204 })
-  }),
+  http.delete(apiUrl("/tasks/:id"), async ({ request, params }) =>
+    withTaskSimulation(() => {
+      const db = loadDb()
+      const user = authUser(db, request)
+      if (!user) {
+        return unauthorized()
+      }
+      const id = String(params.id)
+      const index = db.tasks.findIndex((t) => t.id === id)
+      if (index === -1) {
+        return HttpResponse.json({ error: "not found" }, { status: 404 })
+      }
+      const task = db.tasks[index]
+      const proj = db.projects.find((p) => p.id === task.project_id)
+      if (!proj) {
+        return HttpResponse.json({ error: "not found" }, { status: 404 })
+      }
+      const canDelete = task.creator_id === user.id || proj.owner_id === user.id
+      if (!canDelete) {
+        return HttpResponse.json({ error: "forbidden" }, { status: 403 })
+      }
+      db.tasks.splice(index, 1)
+      saveDb(db)
+      return new HttpResponse(null, { status: 204 })
+    })
+  ),
 ]

@@ -17,6 +17,9 @@ type ProjectTaskListProps = {
   onAddTask: (columnId: TaskStatus) => void
 }
 
+const LIST_ROW_GRID =
+  "grid items-start grid-cols-[minmax(0,1.8fr)_minmax(0,3.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,2.2fr)]"
+
 export function ProjectTaskList({ tasks, users, onEditTask, onAddTask }: ProjectTaskListProps) {
   if (tasks.length === 0) {
     return (
@@ -46,7 +49,7 @@ export function ProjectTaskList({ tasks, users, onEditTask, onAddTask }: Project
                 </h2>
                 <span
                   className={cn(
-                    "inline-flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+                    "inline-flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums",
                     column.countBadgeClass
                   )}
                 >
@@ -71,77 +74,47 @@ export function ProjectTaskList({ tasks, users, onEditTask, onAddTask }: Project
                 {columnTasks.length === 0 ? (
                   <p className="px-3 py-12 text-center text-xs text-muted-foreground">No tasks in this column</p>
                 ) : (
-                  <table className="w-full min-w-xl table-fixed border-collapse">
-                    <thead>
-                      <tr className="border-b border-border/50 bg-transparent">
-                        <th
-                          className={cn(
-                            "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide w-[18%]",
-                            column.headerTextClass
-                          )}
-                        >
-                          Task
-                        </th>
-                        <th
-                          className={cn(
-                            "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide w-[38%]",
-                            column.headerTextClass
-                          )}
-                        >
-                          Detail
-                        </th>
-                        <th
-                          className={cn(
-                            "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide w-[11%]",
-                            column.headerTextClass
-                          )}
-                        >
-                          Priority
-                        </th>
-                        <th
-                          className={cn(
-                            "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide w-[11%]",
-                            column.headerTextClass
-                          )}
-                        >
-                          Due
-                        </th>
-                        <th
-                          className={cn(
-                            "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide w-[22%]",
-                            column.headerTextClass
-                          )}
-                        >
-                          Assignee
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {columnTasks.map((task) => (
-                        <tr
-                          className="cursor-pointer border-b border-border/40 transition-colors last:border-b-0 hover:bg-black/5 dark:hover:bg-white/7"
-                          key={task.id}
-                          onClick={() => onEditTask(task)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault()
-                              onEditTask(task)
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <td className="min-w-0 px-3 py-2 align-top text-sm">
-                            <span className="font-medium text-foreground">{task.title}</span>
-                          </td>
-                          <td className="min-w-0 px-3 py-2 align-top text-sm text-foreground/90">
+                  <div className="min-w-xl">
+                    {/* Header */}
+                    <div
+                      className={cn(
+                        LIST_ROW_GRID,
+                        "border-b border-border/50 text-xs font-semibold uppercase tracking-wide",
+                        column.headerTextClass
+                      )}
+                    >
+                      <div className="px-3 py-2">Task</div>
+                      <div className="px-3 py-2">Detail</div>
+                      <div className="px-3 py-2">Priority</div>
+                      <div className="px-3 py-2">Due</div>
+                      <div className="px-3 py-2">Assignee</div>
+                    </div>
+
+                    {/* Rows */}
+                    {columnTasks.map((task) => (
+                      <div
+                        className="cursor-pointer border-b border-border/40 transition-colors last:border-b-0 hover:bg-black/5 dark:hover:bg-white/7"
+                        key={task.id}
+                        onClick={() => onEditTask(task)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            onEditTask(task)
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className={cn(LIST_ROW_GRID, "text-sm")}>
+                          <div className="min-w-0 px-3 py-2 text-foreground">{task.title}</div>
+                          <div className="min-w-0 px-3 py-2 text-foreground/90">
                             {task.description?.trim() ? (
                               <span className="line-clamp-2">{task.description.trim()}</span>
                             ) : (
                               <span className="text-foreground/50">—</span>
                             )}
-                          </td>
-                          <td className="px-3 py-2 align-top text-sm">
+                          </div>
+                          <div className="px-3 py-2">
                             <span
                               className={cn(
                                 "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium",
@@ -150,21 +123,23 @@ export function ProjectTaskList({ tasks, users, onEditTask, onAddTask }: Project
                             >
                               {priorityLabel(task.priority)}
                             </span>
-                          </td>
-                          <td className="px-3 py-2 align-top text-sm tabular-nums text-foreground/85">
+                          </div>
+                          <div className="px-3 py-2 tabular-nums text-foreground/85">
                             {task.due_date ? (
                               formatShortDate(task.due_date)
                             ) : (
                               <span className="text-foreground/40">—</span>
                             )}
-                          </td>
-                          <td className="min-w-0 px-3 py-2 align-top text-sm text-foreground/85">
-                            <span className="line-clamp-2 wrap-break-word">{assigneeName(users, task.assignee_id) ?? "Unassigned"}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                          <div className="min-w-0 px-3 py-2 text-foreground/85">
+                            <span className="line-clamp-2 wrap-break-word">
+                              {assigneeName(users, task.assignee_id) ?? "Unassigned"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

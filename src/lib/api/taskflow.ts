@@ -124,17 +124,19 @@ export function listProjectTasks(
   return apiRequest(`/projects/${projectId}/tasks${query ? `?${query}` : ""}`)
 }
 
-export function createTask(projectId: string, input: CreateTaskInput): Promise<Task> {
+export function createTask(projectId: string, input: CreateTaskInput, signal?: AbortSignal): Promise<Task> {
   return apiRequest(`/projects/${projectId}/tasks`, {
     method: "POST",
     body: JSON.stringify(input),
+    signal,
   })
 }
 
-export function updateTask(taskId: string, input: UpdateTaskInput): Promise<Task> {
+export function updateTask(taskId: string, input: UpdateTaskInput, signal?: AbortSignal): Promise<Task> {
   return apiRequest(`/tasks/${taskId}`, {
     method: "PATCH",
     body: JSON.stringify(input),
+    signal,
   })
 }
 

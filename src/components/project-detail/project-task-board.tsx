@@ -17,6 +17,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core"
 
@@ -24,6 +25,7 @@ type ProjectTaskBoardProps = {
   tasks: Task[]
   filteredTasks: Task[]
   users: AuthUser[]
+  pendingTaskIds: Set<string>
   onAddTask: (columnId: TaskStatus) => void
   onEditTask: (task: Task) => void
   onBoardCommit: (nextTasks: Task[]) => void
@@ -33,14 +35,20 @@ export function ProjectTaskBoard({
   tasks,
   filteredTasks,
   users,
+  pendingTaskIds,
   onAddTask,
   onEditTask,
   onBoardCommit,
 }: ProjectTaskBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  const [dragColumnTaskIds, setDragColumnTaskIds] = useState<Record<TaskStatus, string[]> | null>(null)
   const skipClickForTaskIdRef = useRef<string | null>(null)
 
-  const columnTaskIds = useMemo(() => deriveColumnTaskIds(tasks, filteredTasks), [tasks, filteredTasks])
+  const columnTaskIds = useMemo(
+    () => dragColumnTaskIds ?? deriveColumnTaskIds(tasks, filteredTasks),
+    [dragColumnTaskIds, tasks, filteredTasks]
+  )
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
 
@@ -54,29 +62,42 @@ export function ProjectTaskBoard({
     const id = String(event.active.id)
     const task = tasks.find((t) => t.id === id) ?? null
     setActiveTask(task)
+    setDragColumnTaskIds(deriveColumnTaskIds(tasks, filteredTasks))
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over || !dragColumnTaskIds) {
+      return
+    }
+    const nextIds = applyDropToColumnTaskIds(dragColumnTaskIds, String(active.id), String(over.id))
+    if (nextIds) {
+      setDragColumnTaskIds(nextIds)
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     skipClickForTaskIdRef.current = String(active.id)
+    const accumulatedIds = dragColumnTaskIds
     setActiveTask(null)
+    setDragColumnTaskIds(null)
 
-    if (!over) {
+    if (!over || !accumulatedIds) {
       return
     }
 
-    const overId = String(over.id)
-    const nextIds = applyDropToColumnTaskIds(columnTaskIds, String(active.id), overId)
-    if (!nextIds) {
-      return
-    }
+    const finalIds =
+      applyDropToColumnTaskIds(accumulatedIds, String(active.id), String(over.id)) ??
+      accumulatedIds
 
-    const nextTasks = reorderTasksFromColumnIds(tasks, nextIds)
+    const nextTasks = reorderTasksFromColumnIds(tasks, finalIds)
     onBoardCommit(nextTasks)
   }
 
   function handleDragCancel() {
     setActiveTask(null)
+    setDragColumnTaskIds(null)
   }
 
   return (
@@ -84,6 +105,7 @@ export function ProjectTaskBoard({
       collisionDetection={closestCenter}
       onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
       onDragStart={handleDragStart}
       sensors={sensors}
     >
@@ -105,6 +127,7 @@ export function ProjectTaskBoard({
                   isDragActive={Boolean(activeTask)}
                   onAddTask={() => onAddTask(column.id)}
                   onEditTask={onEditTask}
+                  pendingTaskIds={pendingTaskIds}
                   skipClickForTaskIdRef={skipClickForTaskIdRef}
                   taskById={taskById}
                   taskIds={ids}

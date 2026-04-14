@@ -73,7 +73,7 @@ export function TaskDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="gap-0 p-0 sm:max-w-lg [&_button]:text-[0.8rem]">
+      <DialogContent className="gap-0 p-0 sm:max-w-lg [&_button]:text-caption">
         <form className="grid" onSubmit={onSubmit}>
           <DialogHeader className="border-b border-border/60 px-4 py-3 pr-12">
             <DialogTitle className="font-heading text-base font-medium leading-none">
@@ -92,7 +92,7 @@ export function TaskDialog({
                 value={title}
               />
               {error && (
-                <p className="text-[0.8rem] text-destructive">{error}</p>
+                <p className="text-caption text-destructive">{error}</p>
               )}
             </div>
 
@@ -112,7 +112,7 @@ export function TaskDialog({
                 </DialogSpanLabel>
                 <Select onValueChange={(v) => onTaskStatusChange(v as TaskStatus)} value={taskStatus}>
                   <SelectTrigger
-                    className="h-9 w-full !min-w-0 border-border bg-background"
+                    className="h-9 w-full min-w-0! border-border bg-background"
                     variant="field"
                   >
                     <SelectValue />
@@ -136,7 +136,7 @@ export function TaskDialog({
                   value={assigneeId || "none"}
                 >
                   <SelectTrigger
-                    className="h-9 w-full !min-w-0 border-border bg-background"
+                    className="h-9 w-full min-w-0! border-border bg-background"
                     variant="field"
                   >
                     <SelectValue placeholder="Unassigned" />
@@ -161,7 +161,7 @@ export function TaskDialog({
                 {PRIORITIES.map((p) => (
                   <button
                     className={cn(
-                      "min-w-0 flex-1 cursor-pointer rounded-[min(var(--radius-md),12px)] px-1.5 py-1 text-center text-[0.8rem] font-medium transition-colors",
+                      "min-w-0 flex-1 cursor-pointer rounded-[min(var(--radius-md),12px)] px-1.5 py-1 text-center text-caption font-medium transition-colors",
                       priority === p
                         ? cn(priorityPillClassName(p), "shadow-sm")
                         : "border border-transparent bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -182,7 +182,7 @@ export function TaskDialog({
                 <PopoverTrigger asChild>
                   <Button
                     className={cn(
-                      "h-9 w-full justify-start gap-2 border-border bg-background px-2.5 font-normal text-[0.8rem] hover:bg-muted/60"
+                      "h-9 w-full justify-start gap-2 border-border bg-background px-2.5 font-normal text-caption hover:bg-muted/60"
                     )}
                     type="button"
                     variant="outline"
@@ -208,16 +208,14 @@ export function TaskDialog({
 
           <DialogFooter className="mx-0 mb-0 gap-2 rounded-none border-border/60 bg-muted/30 px-4 py-3 sm:justify-end">
             <Button
-              onClick={() => {
-                onOpenChange(false)
-              }}
+              onClick={() => onOpenChange(false)}
               type="button"
               variant="outline"
             >
               Cancel
             </Button>
             <Button className="bg-brand text-brand-foreground hover:bg-brand-hover" disabled={isSaving} type="submit">
-              {isSaving ? "Saving…" : "Save task"}
+              {isSaving ? "Saving…" : editingTaskId ? "Save changes" : "Create task"}
             </Button>
           </DialogFooter>
         </form>

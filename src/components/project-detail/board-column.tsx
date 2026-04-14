@@ -21,30 +21,22 @@ type BoardColumnProps = {
   taskIds: string[]
   taskById: Map<string, Task>
   users: AuthUser[]
+  pendingTaskIds: Set<string>
   onAddTask: () => void
   onEditTask: (task: Task) => void
   skipClickForTaskIdRef: MutableRefObject<string | null>
   isDragActive: boolean
 }
 
-function BoardEmptyDropZone({
-  columnId,
-  isDragActive,
-  columnDropTarget,
-}: {
-  columnId: TaskStatus
-  isDragActive: boolean
-  columnDropTarget: boolean
-}) {
+function BoardEmptyDropZone({ columnId, isDragActive }: { columnId: TaskStatus; isDragActive: boolean }) {
   const id = boardEmptyDropId(columnId)
   const { setNodeRef, isOver } = useDroppable({ id })
-  const showActiveDrop = isDragActive && (isOver || columnDropTarget)
 
   return (
     <div
       className={cn(
         "flex min-h-[120px] flex-1 flex-col items-center justify-center rounded-sm px-2 py-6 text-center transition-[box-shadow,background-color]",
-        showActiveDrop
+        isDragActive && isOver
           ? "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary)/0.35)]"
           : "bg-background/25"
       )}
@@ -67,6 +59,7 @@ export function BoardColumn({
   taskIds,
   taskById,
   users,
+  pendingTaskIds,
   onAddTask,
   onEditTask,
   skipClickForTaskIdRef,
@@ -89,7 +82,7 @@ export function BoardColumn({
           </h2>
           <span
             className={cn(
-              "inline-flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+              "inline-flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums",
               columnCountBadgeClass
             )}
           >
@@ -116,11 +109,7 @@ export function BoardColumn({
         )}
       >
         {taskIds.length === 0 ? (
-          <BoardEmptyDropZone
-            columnDropTarget={columnDropTarget}
-            columnId={columnId}
-            isDragActive={isDragActive}
-          />
+          <BoardEmptyDropZone columnId={columnId} isDragActive={isDragActive} />
         ) : (
           <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
             <div className="tf-scrollbar-minimal flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-y-auto overflow-x-hidden overscroll-contain pr-1 *:mb-2 *:last:mb-0">
@@ -131,7 +120,7 @@ export function BoardColumn({
                 }
                 return (
                   <SortableTaskCard
-                    columnDropTarget={columnDropTarget}
+                    isPending={pendingTaskIds.has(id)}
                     key={id}
                     onEdit={onEditTask}
                     skipClickForTaskIdRef={skipClickForTaskIdRef}

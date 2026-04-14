@@ -1,7 +1,6 @@
-/** Workflow columns (board order): todo → in_progress → in_review → done */
+
 export type TaskStatus = "todo" | "in_progress" | "in_review" | "done"
 
-/** Display labels: Low, Medium, High */
 export type TaskPriority = "low" | "medium" | "high"
 
 export type Project = {
@@ -25,5 +24,4 @@ export type Task = {
   updated_at: string
 }
 
-/** Task plus project name for cross-project views (e.g. dashboard). */
 export type TaskWithProjectMeta = Task & { project_name: string }

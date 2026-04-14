@@ -2,9 +2,11 @@ import { Link } from "react-router-dom"
 
 import { TaskflowLogo } from "@/components/brand/taskflow-logo"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 
 export function LandingPage() {
+  const { isAuthenticated } = useAuth()
   const year = new Date().getFullYear()
 
   return (
@@ -27,31 +29,46 @@ export function LandingPage() {
           </p>
 
           <div className="mt-5 flex w-full max-w-sm flex-col gap-2 sm:mt-6 sm:flex-row sm:justify-center">
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className={cn(
-                "w-full border-brand/35 bg-card text-brand hover:bg-brand/10 sm:w-auto sm:min-w-36",
-                "dark:border-brand/40 dark:bg-zinc-900/80 dark:hover:bg-brand/15"
-              )}
-            >
-              <Link to="/login">Log in</Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              className={cn(
-                "w-full bg-brand text-brand-foreground shadow-none hover:bg-brand-hover sm:w-auto sm:min-w-36",
-                "focus-visible:ring-brand/35"
-              )}
-            >
-              <Link to="/register">Create account</Link>
-            </Button>
+            {isAuthenticated ? (
+              <Button
+                asChild
+                size="lg"
+                className={cn(
+                  "w-full bg-brand text-brand-foreground shadow-none hover:bg-brand-hover sm:w-auto sm:min-w-36",
+                  "focus-visible:ring-brand/35"
+                )}
+              >
+                <Link to="/dashboard">Enter app →</Link>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className={cn(
+                    "w-full border-brand/35 bg-card text-brand hover:bg-brand/10 sm:w-auto sm:min-w-36",
+                    "dark:border-brand/40 dark:bg-zinc-900/80 dark:hover:bg-brand/15"
+                  )}
+                >
+                  <Link to="/login">Log in</Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  className={cn(
+                    "w-full bg-brand text-brand-foreground shadow-none hover:bg-brand-hover sm:w-auto sm:min-w-36",
+                    "focus-visible:ring-brand/35"
+                  )}
+                >
+                  <Link to="/register">Create account</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
-        <p className="shrink-0 pt-8 text-center text-sm tabular-nums tracking-wide text-muted-foreground sm:text-[0.9375rem]">
+          <p className="shrink-0 pt-8 text-center text-sm tabular-nums tracking-wide text-muted-foreground">
           Taskflow @ {year}
         </p>
       </main>

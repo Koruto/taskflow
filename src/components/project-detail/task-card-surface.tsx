@@ -1,4 +1,3 @@
-import type { DraggableAttributes } from "@dnd-kit/core"
 import {
   assigneeName,
   formatShortDate,
@@ -8,59 +7,49 @@ import {
 } from "@/lib/project-task-utils"
 import { cn } from "@/lib/utils"
 import type { AuthUser, Task } from "@/types"
-import { Calendar } from "lucide-react"
+import { Calendar, Loader2 } from "lucide-react"
 
 export type TaskCardSurfaceProps = {
   task: Task
   users: AuthUser[]
   className?: string
-  style?: React.CSSProperties
   /** When false, renders a static preview (e.g. drag overlay) without edit affordances. */
   interactive?: boolean
+  /** When true, shows a saving indicator — API update in flight. */
+  isPending?: boolean
   onCardClick?: (event: React.MouseEvent) => void
   onKeyDown?: (event: React.KeyboardEvent) => void
-  /** Merged with outer element for sortable / draggable. */
+  /** Drag listeners spread onto the card element. */
   listeners?: Record<string, unknown>
-  attributes?: DraggableAttributes
-  /** Ref for draggable root. */
-  setNodeRef?: (node: HTMLElement | null) => void
   isDragging?: boolean
   isOverlay?: boolean
-  /** Column is an active drop target — emphasize card edge. */
-  dropZoneHighlight?: boolean
 }
 
 export function TaskCardSurface({
   task,
   users,
   className,
-  style,
   interactive = true,
+  isPending,
   onCardClick,
   onKeyDown,
   listeners,
-  attributes,
-  setNodeRef,
   isDragging,
   isOverlay,
-  dropZoneHighlight,
 }: TaskCardSurfaceProps) {
   const named = assigneeName(users, task.assignee_id)
 
   return (
     <div
       className={cn(
-        "group w-full min-w-0 rounded-md border border-border/80 bg-card p-3 text-left shadow-sm transition-[box-shadow,background-color,border-color]",
+        "group relative w-full min-w-0 rounded-md border border-border/80 bg-card p-3 text-left shadow-sm transition-[box-shadow,background-color,border-color,opacity]",
         !isOverlay && "hover:border-brand/40 hover:shadow-md",
         interactive && "cursor-grab active:cursor-grabbing",
         isDragging && "relative z-20 opacity-40",
         isOverlay && "shadow-md",
-        dropZoneHighlight && "border-primary/50 ring-2 ring-inset ring-primary/35",
+        isPending && "border-brand/30 opacity-70",
         className
       )}
-      ref={setNodeRef}
-      style={style}
-      {...(attributes ?? {})}
       {...(listeners ?? {})}
       onClick={interactive ? onCardClick : undefined}
       onKeyDown={interactive ? onKeyDown : undefined}
@@ -74,12 +63,15 @@ export function TaskCardSurface({
         >
           {priorityLabel(task.priority)}
         </span>
+        {isPending && (
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground/60" aria-label="Saving…" />
+        )}
       </div>
 
       <div className="mt-2 w-full min-w-0">
         <span className="line-clamp-3 text-sm font-medium leading-snug text-foreground">{task.title}</span>
         {task.description ? (
-          <p className="mt-1 line-clamp-2 break-words text-xs leading-relaxed text-muted-foreground">{task.description}</p>
+          <p className="mt-1 line-clamp-2 wrap-break-word text-xs leading-relaxed text-muted-foreground">{task.description}</p>
         ) : null}
       </div>
 

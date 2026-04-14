@@ -31,11 +31,11 @@ export function ProjectEditDialog({
 }: ProjectEditDialogProps) {
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="gap-0 p-0 sm:max-w-lg [&_button]:text-[0.8rem]">
+      <DialogContent className="gap-0 p-0 sm:max-w-lg [&_button]:text-caption">
         <form className="grid" onSubmit={onSubmit}>
           <DialogHeader className="border-b border-border/60 px-4 py-3 pr-12">
             <DialogTitle className="font-heading text-base font-medium leading-none">Edit project</DialogTitle>
-            <p className="mt-1 text-[0.8rem] text-muted-foreground">Update the project name and description.</p>
+            <p className="mt-1 text-caption text-muted-foreground">Update the project name and description.</p>
           </DialogHeader>
 
           <div className="grid gap-3 px-4 py-3">
@@ -58,7 +58,7 @@ export function ProjectEditDialog({
               />
             </div>
             {error && (
-              <p className="text-[0.8rem] text-destructive">{error}</p>
+              <p className="text-caption text-destructive">{error}</p>
             )}
           </div>
 
